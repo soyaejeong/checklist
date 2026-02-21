@@ -66,26 +66,33 @@ npm run test:skill
 
 ```typescript
 import { renderHook, waitFor } from '@testing-library/react';
-import { useItems } from '../../src/hooks/useItems';
-import { createMockItem } from '../fixtures/itemData';
+import { useChecklistItems } from '../../src/hooks/useChecklistItems';
+import { createMockChecklistItem } from '../fixtures/checklistData';
 import { mockUsers } from '../fixtures/userData';
 
 // Mock the Supabase client
 vi.mock('../../src/lib/supabase');
 
-test('fetches items for authenticated user', async () => {
-  const mockItem = createMockItem({ name: 'Test Item' });
+test('fetches checklist items for anonymous user', async () => {
+  const mockItem = createMockChecklistItem({
+    item_name: 'Hiking boots',
+    category: 'Footwear',
+    priority: 'essential',
+  });
   const mockSupabase = (await import('../../src/lib/supabase')).supabase;
 
-  // Setup mock responses
+  // Setup mock responses — anonymous auth returns a user with a UUID
   mockSupabase.auth.getUser.mockResolvedValueOnce({
-    data: { user: mockUsers.authenticated },
+    data: { user: mockUsers.anonymous },
     error: null,
   });
 
   // ... setup query builder mocks ...
 
-  const { result } = renderHook(() => useItems(), { wrapper: createWrapper() });
+  const { result } = renderHook(
+    () => useChecklistItems('jeju-adventure-001'),
+    { wrapper: createWrapper() }
+  );
 
   await waitFor(() => {
     expect(result.current.isLoading).toBe(false);
@@ -112,45 +119,51 @@ test('fetches items for authenticated user', async () => {
 
 ### Characteristics
 - ⚠️ **Slow** - Each test takes 2-10+ seconds
-- ⚠️ **Requires credentials** - Needs `.env.local` with TEST Supabase credentials and `E2E_TEST_USERS`
+- ⚠️ **Requires credentials** - Needs `.env.local` with Supabase URL and anon key
 - ⚠️ **Network dependent** - Can fail due to connectivity issues
 - ✅ **High confidence** - Tests the actual production behavior
 - ✅ **Runs in CI** - Automatically validates every push using TEST database
 - ✅ **Respects RLS** - Always uses proper authentication (no RLS bypass)
-- ✅ **Avoids rate limits** - Uses pre-created persistent test users
+- ✅ **Simple auth** - Uses anonymous auth for test users (no pre-creation needed)
 
-### Pre-Created Test Users
+### E2E Test Authentication
 
-E2E tests use **pre-created persistent test users** stored in an environment variable to avoid Supabase auth rate limits:
+E2E tests use **Supabase Anonymous Auth** — each test creates a fresh anonymous user via `signInAnonymously()`. This provides:
 
-**How it works:**
-1. Run `node scripts/create-e2e-test-users.js` once to create consolidated test users
-2. Add the output (`E2E_TEST_USERS` JSON) to your `.env.local`
-3. Tests sign in with pre-created credentials (never create users during tests)
-4. Each test file gets its own dedicated user for isolation
+- ✅ Perfect test isolation (each test gets a unique UUID)
+- ✅ No pre-created users or environment variables needed
+- ✅ RLS policies tested with real auth
+- ✅ Zero setup beyond Supabase URL + anon key
 
 **Example usage:**
 ```typescript
-import { getOrCreateTestUser } from '../utils/testUserManager';
+import { createClient } from '@supabase/supabase-js';
+
+let testClient: SupabaseClient;
+let testUserId: string;
 
 beforeAll(async () => {
-  const { client, user, session } = await getOrCreateTestUser('primary');
+  testClient = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
-  testClient = client;
-  testUserId = user.id;
+  // Each test gets a fresh anonymous user
+  const { data } = await testClient.auth.signInAnonymously();
+  testUserId = data.user!.id;
+});
+
+afterAll(async () => {
+  // Clean up test data
+  await testClient.from('checklist_items').delete().eq('user_id', testUserId);
+  await testClient.from('dismissed_suggestions').delete().eq('user_id', testUserId);
 });
 ```
 
-**Benefits:**
-- ✅ Zero rate limit risk (only `signInWithPassword`, never `createUser`)
-- ✅ Faster test startup (no user creation overhead)
-- ✅ Works in CI with secrets
-- ✅ Test isolation maintained (one user per test file)
-
 **Setup:**
-1. Run: `node scripts/create-e2e-test-users.js`
-2. Copy the `E2E_TEST_USERS='...'` output to your `.env.local`
-3. For CI: Add `E2E_TEST_USERS` as a secret
+1. Add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` to `.env.local`
+2. Ensure anonymous auth is enabled in Supabase Dashboard
+3. For CI: Add both env vars as secrets
 
 ## Mocking Infrastructure
 
@@ -159,7 +172,7 @@ beforeAll(async () => {
 Location: `tests/lib/__mocks__/supabase.ts`
 
 The mock client provides:
-- **Auth methods**: `getUser()`, `signUp()`, `signInWithPassword()`, `signOut()`
+- **Auth methods**: `getUser()`, `signInAnonymously()`, `signOut()`
 - **Query builder**: Chainable methods like `.from().select().eq().maybeSingle()`
 - **Customizable responses**: Override defaults per test
 
@@ -181,21 +194,24 @@ mockSupabase.auth.getUser.mockResolvedValue({
 
 ### Test Fixtures
 
-#### Item Data (`tests/fixtures/itemData.ts`)
+#### Checklist Data (`tests/fixtures/checklistData.ts`)
 
 ```typescript
-import { createMockItem, mockItems } from '../fixtures/itemData';
+import { createMockChecklistItem, mockChecklistItems } from '../fixtures/checklistData';
 
-// Create custom item
-const item = createMockItem({
-  name: 'Custom Item',
-  status: 'active',
+// Create custom checklist item
+const item = createMockChecklistItem({
+  item_name: 'Hiking boots',
+  category: 'Footwear',
+  priority: 'essential',
+  day_relevance: [2],
+  activity_ref: 'd2-hallasan',
 });
 
 // Use predefined scenarios
-const active = mockItems.active;
-const completed = mockItems.completed;
-const empty = mockItems.empty;
+const essentialItem = mockChecklistItems.essential;
+const aiSuggestion = mockChecklistItems.aiSuggestion;
+const checkedItem = mockChecklistItems.checked;
 ```
 
 #### User Data (`tests/fixtures/userData.ts`)
@@ -204,13 +220,13 @@ const empty = mockItems.empty;
 import { createMockUser, mockUsers } from '../fixtures/userData';
 
 // Use predefined users
-const user = mockUsers.authenticated;
-const different = mockUsers.different;
+const user = mockUsers.anonymous;        // anonymous auth user (default)
+const different = mockUsers.different;   // different anonymous user (for isolation)
 
 // Create custom user
 const customUser = createMockUser({
-  email: 'custom@example.com',
-  id: 'custom-id',
+  id: 'custom-anonymous-id',
+  is_anonymous: true,
 });
 ```
 
