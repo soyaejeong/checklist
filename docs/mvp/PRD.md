@@ -1,4 +1,4 @@
-# TravelReady — AI-Powered Trip Checklist
+# TripChecklist — AI-Powered Trip Checklist
 
 **MVP Product Requirements Document**
 
@@ -112,7 +112,7 @@ Checklist State
 | Add / Edit / Delete items | **IN** | Manual CRUD. Inline editing. Delete button. User can assign category and day/activity when adding. |
 | AI Suggestion cards | **IN** | AI items shown as accept/dismiss cards with reasoning preview. AI is aware of existing items. |
 | Item quantities | **IN** | Quantity stepper per item. |
-| Persist checklist state | **IN** | Items, check state, manual additions, and dismissed suggestions persisted server-side. Survives page refreshes and browser restarts (same device). |
+| Persist checklist state | **IN** | Items, check state, manual additions, and dismissed suggestions persisted locally (localStorage). Survives page refreshes and browser restarts (same device, same browser). |
 | Booking deep link UI | **PARTIAL** | Link buttons rendered but non-functional (mock URLs). |
 | Search / Filter | **OUT** | Follow-up. |
 | Collaborative sharing | **OUT** | Follow-up. |
@@ -137,7 +137,7 @@ Checklist State
 - **Working demo:** End-to-end flow from trip selection → existing items displayed → AI suggestion → checklist interaction is functional and presentable.
 - **AI quality:** Suggestions are relevant, non-duplicative of existing items, correctly mapped to days/activities, and personalized to the user profile (health items appear for users with conditions, must-have items always present) for at least 2 out of 3 sample trips.
 - **Day/Activity view works:** Users can clearly see which items belong to which day and why.
-- **Persistence:** Checklist state persisted server-side. Items, check states, and dismissed suggestions survive page refreshes and browser restarts on the same device.
+- **Persistence:** Checklist state persisted locally (localStorage). Items, check states, and dismissed suggestions survive page refreshes and browser restarts on the same device and browser.
 - **Mobile UX:** Usable and visually polished on mobile viewport (375px+).
 
 ---
@@ -161,6 +161,6 @@ Checklist State
 | AI suggests duplicates of existing items | Annoying UX, erodes trust in AI | Pass existing items to AI pipeline. Post-process dedup before returning. |
 | Weather API forecast limits | Free tier limited to 5-day forecast; trips may be further out | Cache responses. Fallback to weather notes embedded in trip data for distant trips. |
 | 1-week timeline too tight | Incomplete features or poor polish | Cut search/filter and templates first. Focus: AI + two views + check/uncheck + persistence. |
-| Supabase network dependency | Network required for all reads/writes | Optimistic UI updates. Acceptable for demo — offline is v2.0. |
-| Health data PII | Medical info stored without user authentication | Scope data access by trip ID. No cross-trip data exposure. See TECHSPEC for RLS details. |
+| localStorage single-device | Data doesn't sync across devices or browsers | Acceptable for MVP demo — cross-device sync is v1.1 follow-up. |
+| Health data PII | Medical info in user profile used by AI | Data stays client-side only (localStorage). No server-side storage of PII in MVP. Production integration will add auth + server persistence. |
 | LLM cost overrun | Uncapped AI calls during demo | Cache suggestions per trip. Limit suggestion requests per session. |

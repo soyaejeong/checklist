@@ -14,12 +14,12 @@
 │                  │     JSON suggestions            │                      │
 └────────┬─────────┘                                └──────────┬───────────┘
          │                                                     │
-         │ Supabase JS client                                  │ OpenWeatherMap
-         │ (CRUD: items, dismissed)                            │ (weather tool)
+         │ ChecklistRepository                                 │ OpenWeatherMap
+         │ (interface)                                         │ (weather tool)
          ▼                                                     ▼
 ┌─────────────────┐                                ┌──────────────────────┐
-│   Supabase       │                                │  OpenWeatherMap API  │
-│   (Postgres)     │                                │  (free tier)         │
+│  localStorage    │                                │  OpenWeatherMap API  │
+│  (MVP impl.)     │                                │  (free tier)         │
 └─────────────────┘                                └──────────────────────┘
 ```
 
@@ -30,8 +30,8 @@
 | Frontend framework | Next.js (not Vite) | API route pairing + native Vercel deployment. SSR not needed for MVP but available later. |
 | AI backend | Separate FastAPI service | Keeps AI logic independently deployable and scalable. Python ecosystem for LangChain. |
 | LLM | Claude (Anthropic API) | Primary LLM. Project uses Claude Code for development — staying in Anthropic ecosystem. GPT-4o as fallback. |
-| Persistence | Supabase (not LocalStorage) | ~2-3 hrs extra setup but avoids full persistence rebuild later. Real-time subscriptions ready for v2.0 collaborative sharing. |
-| Frontend CRUD | Supabase JS client (direct) | No backend needed for checklist operations. Reduces FastAPI scope to AI only. |
+| Persistence | localStorage + repository pattern | Prototype will integrate with production DB (TBD). Both Supabase and localStorage are equally throwaway — localStorage is simpler, has zero external dependencies, and works offline. Repository interface makes the future DB swap a single-file change. |
+| Frontend CRUD | ChecklistRepository interface | UI programs against an abstraction. MVP ships `LocalStorageChecklistRepository`. Production swaps in `ApiChecklistRepository`. Reduces coupling to zero. |
 
 ---
 
@@ -44,7 +44,7 @@
 | LLM | Claude (Anthropic API) | Structured JSON output mode. Few-shot prompting for consistent checklist format. GPT-4o fallback. |
 | Weather API | OpenWeatherMap (free tier) | LangChain Tool integration. Cached per destination+date. 5-day forecast limit. |
 | Backend | FastAPI (Python) | AI suggestions endpoint only. Single endpoint: `POST /api/suggestions`. |
-| Database | Supabase (Postgres) | Hosted Postgres with JS client. Handles checklist CRUD directly from frontend. Free tier covers MVP. |
+| Persistence | localStorage | Browser-native storage via repository pattern. No external service needed. Swappable to any backend via `ChecklistRepository` interface. |
 | Hosting | Vercel (FE) + Railway/Fly (BE) | Fast deploy. Free tier sufficient for demo. |
 
 ---
@@ -119,75 +119,89 @@ Canonical set enforced by Pydantic enum on AI output. User-added items default t
 
 ---
 
-## Database Schema (Supabase)
+## Data Layer
 
-```sql
--- Trips (hardcoded seed data for MVP)
-CREATE TABLE trips (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  trip_json JSONB NOT NULL,
-  user_profile JSONB NOT NULL
-);
+### TypeScript Data Shapes
 
--- Checklist items (user-added + accepted AI suggestions)
-CREATE TABLE checklist_items (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  trip_id UUID NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
-  item_name TEXT NOT NULL,
-  category TEXT NOT NULL DEFAULT 'Miscellaneous',
-  quantity INTEGER NOT NULL DEFAULT 1,
-  priority TEXT NOT NULL DEFAULT 'recommended'
-    CHECK (priority IN ('essential', 'recommended', 'optional')),
-  day_relevance INTEGER[] DEFAULT '{}',
-  activity_ref TEXT,                    -- references activity_id from trip JSON
-  reasoning TEXT,                       -- AI-generated reasoning (null for user-added)
-  checked BOOLEAN NOT NULL DEFAULT false,
-  booking_link TEXT,
-  source TEXT NOT NULL DEFAULT 'user'
-    CHECK (source IN ('user', 'ai')),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
+Same fields as previous SQL schema, expressed as TypeScript interfaces for localStorage persistence.
 
--- Dismissed suggestions (to prevent re-suggesting)
-CREATE TABLE dismissed_suggestions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  trip_id UUID NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
-  item_name TEXT NOT NULL,
-  category TEXT,
-  activity_ref TEXT,
-  dismissed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (trip_id, item_name, category)
-);
+```typescript
+interface ChecklistItem {
+  id: string;                          // crypto.randomUUID()
+  tripId: string;
+  itemName: string;
+  category: Category;                  // canonical taxonomy enum
+  quantity: number;                    // default: 1
+  priority: 'essential' | 'recommended' | 'optional';  // default: 'recommended'
+  dayRelevance: number[];              // default: []
+  activityRef: string | null;          // references activity_id from trip JSON
+  reasoning: string | null;            // AI-generated reasoning (null for user-added)
+  checked: boolean;                    // default: false
+  bookingLink: string | null;
+  source: 'user' | 'ai';              // default: 'user'
+  createdAt: string;                   // ISO 8601
+  updatedAt: string;                   // ISO 8601
+}
 
--- Indexes
-CREATE INDEX idx_checklist_items_trip ON checklist_items(trip_id);
-CREATE INDEX idx_dismissed_trip ON dismissed_suggestions(trip_id);
+interface DismissedSuggestion {
+  id: string;
+  tripId: string;
+  itemName: string;
+  category: string | null;
+  activityRef: string | null;
+  dismissedAt: string;                 // ISO 8601
+}
 ```
 
-**Key schema decisions from consensus review:**
-- `priority` column added to match AI response format (was missing in original PRD)
-- `activity_ref` references `activity_id` from trip JSON (stable ID, not descriptive string)
-- `dismissed_suggestions` includes `category` + unique constraint for robust dedup
-- All columns have explicit defaults
+### localStorage Keys
+
+```
+tripchecklist:items:{tripId}       → ChecklistItem[]
+tripchecklist:dismissed:{tripId}   → DismissedSuggestion[]
+```
+
+### Repository Interface
+
+UI components depend on this interface, never on localStorage directly.
+
+```typescript
+interface ChecklistRepository {
+  getItems(tripId: string): Promise<ChecklistItem[]>;
+  addItem(item: Omit<ChecklistItem, 'id' | 'createdAt' | 'updatedAt'>): Promise<ChecklistItem>;
+  updateItem(id: string, updates: Partial<ChecklistItem>): Promise<ChecklistItem>;
+  deleteItem(id: string): Promise<void>;
+  toggleCheck(id: string): Promise<ChecklistItem>;
+
+  getDismissed(tripId: string): Promise<DismissedSuggestion[]>;
+  dismissSuggestion(tripId: string, itemName: string, category: string | null): Promise<void>;
+}
+```
+
+MVP ships `LocalStorageChecklistRepository` implementing this interface. When the production DB is chosen, a new implementation (e.g., `ApiChecklistRepository`) replaces it without touching UI code.
+
+**Key design decisions (preserved from consensus review):**
+- `priority` field matches AI response format (was missing in original PRD)
+- `activityRef` references `activity_id` from trip JSON (stable ID, not descriptive string)
+- Dismissed suggestions include `category` for robust dedup (unique by tripId + itemName + category)
+- All fields have explicit defaults in the repository implementation
 
 ---
 
 ## API Contracts
 
-### Checklist CRUD — Supabase (direct from frontend)
+### Checklist CRUD — Repository Pattern
 
-Frontend uses `@supabase/supabase-js` client directly. No backend involved.
+Frontend calls `ChecklistRepository` methods. No backend involved for CRUD operations.
 
-| Operation | Supabase Call |
-|-----------|--------------|
-| Load checklist items for a trip | `supabase.from('checklist_items').select('*').eq('trip_id', tripId)` |
-| Add item | `supabase.from('checklist_items').insert({ trip_id, item_name, category, ... })` |
-| Toggle check | `supabase.from('checklist_items').update({ checked: !current, updated_at: new Date() }).eq('id', itemId)` |
-| Edit item | `supabase.from('checklist_items').update({ item_name, category, quantity, updated_at: new Date() }).eq('id', itemId)` |
-| Delete item | `supabase.from('checklist_items').delete().eq('id', itemId)` |
-| Dismiss AI suggestion | `supabase.from('dismissed_suggestions').insert({ trip_id, item_name, category })` |
-| Load dismissed suggestions | `supabase.from('dismissed_suggestions').select('item_name, category').eq('trip_id', tripId)` |
+| Operation | Repository Call |
+|-----------|----------------|
+| Load checklist items for a trip | `repo.getItems(tripId)` |
+| Add item | `repo.addItem({ tripId, itemName, category, ... })` |
+| Toggle check | `repo.toggleCheck(itemId)` |
+| Edit item | `repo.updateItem(itemId, { itemName, category, quantity })` |
+| Delete item | `repo.deleteItem(itemId)` |
+| Dismiss AI suggestion | `repo.dismissSuggestion(tripId, itemName, category)` |
+| Load dismissed suggestions | `repo.getDismissed(tripId)` |
 
 ### AI Suggestions — FastAPI Endpoint
 
@@ -306,7 +320,7 @@ Trip JSON + User Profile + Existing Items + Dismissed Items
 | AI failure (LLM error) | Toast notification: "Suggestions unavailable. Try again." + retry button |
 | AI returns zero suggestions | Message: "AI has no additional suggestions for this trip." |
 | Empty checklist (no items) | Prompt: "Add items manually or tap 'Get AI Suggestions' to get started." |
-| Supabase offline | Optimistic UI updates in React state. Queue failed writes and retry on reconnect. |
+| localStorage full | Extremely unlikely for checklist data (~5MB limit vs ~few KB per trip). Show toast if `setItem` throws `QuotaExceededError`. |
 | Malformed AI response | Pydantic validation catches invalid JSON. Return error to user, log for debugging. |
 
 ---
@@ -315,9 +329,8 @@ Trip JSON + User Profile + Existing Items + Dismissed Items
 
 | Concern | Mitigation |
 |---------|------------|
-| Health/medical PII in Supabase | RLS policy: anon users can only access data matching their `trip_id`. No cross-trip data exposure. Consider proxying sensitive reads through FastAPI in post-MVP. |
-| No auth for MVP | All data scoped to `trip_id` in URL. Acceptable for demo with hardcoded sample data. |
-| Supabase anon key in frontend | Anon key with RLS policies. Service key stays server-side only (FastAPI env vars). |
+| Health/medical PII in localStorage | Data stays client-side only — never transmitted to a server. Acceptable for demo with hardcoded sample data. Production integration will need server-side storage with auth. |
+| No auth for MVP | All data scoped to `trip_id` and stored locally. No cross-user exposure possible (single-device, single-browser). |
 | LLM prompt injection | Trip data is hardcoded for MVP. User-added item names are the only user input to LLM — sanitize before including in prompt. |
 
 ---
@@ -328,4 +341,4 @@ Trip JSON + User Profile + Existing Items + Dismissed Items
 |-----------|----------|------|-------|
 | Frontend (Next.js) | Vercel | Free tier | Auto-deploy from GitHub. Custom domain optional. |
 | Backend (FastAPI) | Railway or Fly.io | Free tier | Single `POST /api/suggestions` endpoint. Set `ANTHROPIC_API_KEY` and `OPENWEATHERMAP_KEY` as env vars. |
-| Database | Supabase | Free tier | Hosted Postgres. RLS enabled. Seed trips via SQL migration. |
+| Persistence | localStorage (browser) | N/A | No hosted database needed for MVP. Data lives in the user's browser. |
