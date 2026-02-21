@@ -1,0 +1,14 @@
+{
+  "name": "reviewing-techspec",
+  "description": "Evaluates and improves technical specifications through multi-model consensus discussion",
+  "triggers": [
+    "improve techspec",
+    "evaluate techspec",
+    "review techspec",
+    "reviewing techspec",
+    "techspec quality",
+    "group iteration on techspec"
+  ],
+  "version": "1.0.0",
+  "author": "Checklist Dev Team"
+}

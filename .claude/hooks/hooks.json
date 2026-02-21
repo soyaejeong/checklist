@@ -1,0 +1,36 @@
+{
+  "description": "Checklist TDD workflow enforcement - validates commit prefixes and ensures changes are committed",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/session-start.sh"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "MANDATORY for git commit commands: (1) Message MUST start with [B] or [S]. (2) Message MUST include GitHub issue number from MASTER_PLAN section header, e.g. [B] Add feature (#42). (3) When ALL tasks in a section are complete, close the issue: gh issue close <number>. (4) Run npm run test:unit first."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/stop-guard.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
