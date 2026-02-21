@@ -37,6 +37,7 @@
 ---
 
 ## Steel Thread
+<!-- parallel: sequential | executor: lead -->
 
 **Goal:** Build the thinnest possible end-to-end version first to prove integration.
 
@@ -53,6 +54,7 @@
 *Each test = one session: Red → Green → Refactor → Mark done*
 
 ### [Section Name]
+<!-- parallel: independent | files: [src/path/file.ts, tests/path/file.test.ts] -->
 
 #### Behavioral Tests
 - [ ] Test: [Specific test - session-sized]
@@ -64,6 +66,7 @@
 ---
 
 ### Integration/E2E Tests
+<!-- parallel: sequential | executor: lead | depends_on: ALL -->
 
 - [ ] Test: [Full user flow - session-sized if possible, or broken into steps]
 

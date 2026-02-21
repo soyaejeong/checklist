@@ -6,6 +6,7 @@
 |--------|-----|
 | Start next task | Say "go" or use `/triggering-tdd` |
 | Batch all tasks | Say "sweep" or use `/sweeping-tdd` |
+| Team sweep (parallel) | Say "tweep" or use `/parallel-sweep` |
 | Generate next plan | Use `/generating-plans` |
 | Complete slice | Use `/advancing-slices` |
 | Commit | Prefix with `[B]` or `[S]` + include `(#issue)` from MASTER_PLAN |
@@ -86,6 +87,7 @@ Never leave uncommitted code changes. After any implementation work:
 
 - **triggering-tdd** - Execute TDD cycle for next MASTER_PLAN task
 - **sweeping-tdd** - Batch TDD: loop through all remaining MASTER_PLAN tasks
+- **parallel-sweep** - Team-based parallel TDD: spawns 2 workers for independent sections
 - **generating-plans** - Create new MASTER_PLAN from template for next slice
 - **advancing-slices** - Archive completed slice, generate next one
 - **filing-bugs** - Issue-first bug workflow

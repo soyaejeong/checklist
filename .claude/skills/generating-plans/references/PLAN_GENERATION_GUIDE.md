@@ -114,6 +114,53 @@ Each checkbox should represent work completable in a single focused session (typ
 
 ---
 
+## Parallelism Guidelines
+
+These guidelines support the `/parallel-sweep` (tweep) workflow, which spawns TDD worker agents to execute independent sections concurrently.
+
+### Section Independence
+
+When designing sections for a slice, maximize independence between sections:
+- Organize sections by architectural layer when possible (Data, State, UI, API)
+- Each section should touch a distinct set of source files
+- Cross-cutting sections (error handling, shared utilities) should complete early or be part of the Steel Thread
+
+### Dependency Declaration
+
+Every section in the Test Checklist must include a `<!-- parallel: ... -->` metadata comment:
+
+- `independent` — No dependencies on other sections; can run in parallel
+- `depends_on=[Section Name]` — Cannot start until the named section is complete
+- `sequential` — Must run in plan order (used for Steel Thread and Integration)
+
+```markdown
+### Repository Tests (#42)
+<!-- parallel: independent | files: src/lib/repository.ts, tests/lib/repository.test.ts -->
+
+### Store Tests (#43)
+<!-- parallel: depends_on=Repository Tests | files: src/store/store.ts, tests/store/store.test.ts -->
+```
+
+### File Ownership
+
+Every section must include a `<!-- files: ... -->` metadata comment listing the source and test files that section will create or modify.
+
+**Rule: Two independent sections must NEVER list the same file.** If two sections must write to the same file, one must depend on the other.
+
+### Anti-Pattern: Overlapping File Scopes
+
+**Bad:** Section A writes to `src/lib/types.ts` AND Section B writes to `src/lib/types.ts` (both marked independent)
+**Why:** Parallel workers would create merge conflicts
+**Good:** Steel Thread creates `src/lib/types.ts`, Section A and B only import from it
+
+### Ideal Section Count for Parallelism
+
+Aim for **3-5 sections** with **2-4 tasks each**. This maps well to the 2-worker team:
+- Fewer than 3 sections: minimal parallelism benefit, use `sweep` instead
+- More than 5 sections: coordination overhead grows, consider consolidating
+
+---
+
 ## Key Principles
 
 - **Session-sized tasks** - Each checkbox = one focused session

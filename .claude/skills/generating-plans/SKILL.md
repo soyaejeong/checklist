@@ -112,6 +112,20 @@ Create `docs/plans/NN-slice-name.md` and fill all sections:
 
 Each test checkbox = one Red → Green → Refactor → Commit cycle.
 
+### Add Parallelism Metadata
+
+For each section in the Test Checklist, add metadata comments to support the `/parallel-sweep` (tweep) workflow:
+
+1. Determine if the section depends on artifacts created by another section
+2. Add `<!-- parallel: independent | files: ... -->` or `<!-- parallel: depends_on=[Section Name] | files: ... -->`
+3. List all source and test files this section will create or modify in the `files:` field
+4. Mark Steel Thread as `<!-- parallel: sequential | executor: lead -->`
+5. Mark Integration as `<!-- parallel: sequential | executor: lead | depends_on: ALL -->`
+
+**Validate:** No two independent sections share files in their `files:` list. If they must share a file, one must `depends_on` the other.
+
+See `references/PLAN_GENERATION_GUIDE.md` "Parallelism Guidelines" for detailed rules.
+
 ### Directory Structure
 
 ```
@@ -173,6 +187,10 @@ This links plan sections to trackable GitHub issues.
 - [ ] Exit criteria are specific and measurable
 - [ ] Duration estimate is 1-3 days
 - [ ] Steel thread identifies the minimal integration proof
+- [ ] Every section has `<!-- parallel: ... -->` metadata (independent, depends_on, or sequential)
+- [ ] Every section has `<!-- files: ... -->` metadata listing source and test files
+- [ ] No file overlaps between independent sections
+- [ ] Steel Thread and Integration marked `sequential` with `executor: lead`
 
 ### Present to User
 

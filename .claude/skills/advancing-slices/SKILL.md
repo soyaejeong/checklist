@@ -51,6 +51,15 @@ git status
 
 Working directory should be clean (no uncommitted changes).
 
+### Clean Up Team Artifacts (if tweep was used)
+
+Check if stale team files exist from a parallel sweep:
+```bash
+ls ~/.claude/teams/tdd-sweep-* 2>/dev/null
+```
+
+If found, clean them up with TeamDelete before proceeding.
+
 If validation fails, report issues and stop.
 
 ## Phase 2: Archive Current Slice
