@@ -10,10 +10,11 @@
 | Complete slice | Use `/advancing-slices` |
 | Commit | Prefix with `[B]` or `[S]` + include `(#issue)` from MASTER_PLAN |
 | Close section issue | `gh issue close <number>` when section complete |
+| Verify spec compliance | Say "verify spec" or use `/verifying-spec` |
 
 ## Documentation
 
-- [TECHSPEC.md](docs/TECHSPEC.md) - Architecture and specifications
+- [TECHSPEC.md](docs/mvp/TECHSPEC.md) - Architecture and specifications
 - [MASTER_PLAN.md](docs/MASTER_PLAN.md) - Current tasks (symlink to active plan)
 - [TESTING_STRATEGY.md](docs/TESTING_STRATEGY.md) - Test patterns and organization
 - [PLAN_GENERATION_GUIDE.md](.claude/skills/generating-plans/references/PLAN_GENERATION_GUIDE.md) - Plan quality standards (task sizing, anti-patterns)
@@ -90,3 +91,4 @@ Never leave uncommitted code changes. After any implementation work:
 - **filing-bugs** - Issue-first bug workflow
 - **reviewing-techspec** - Multi-model consensus on TECHSPEC quality
 - **reviewing-design** - Multi-model design consensus
+- **verifying-spec** - Agent team that cross-references TECHSPEC against code
