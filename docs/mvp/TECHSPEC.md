@@ -7,24 +7,32 @@
 ## Architecture Overview
 
 ```
-┌─────────────────┐     POST /api/suggestions     ┌──────────────────────┐
-│                  │ ──────────────────────────────▸│                      │
-│   Next.js (FE)   │                                │  FastAPI + LangChain │
-│   Vercel          │◂──────────────────────────────│  Railway / Fly       │
+┌─────────────────┐     SuggestionService          ┌──────────────────────┐
+│                  │     (interface)                 │                      │
+│   Next.js (FE)   │ ─────────────────────────────▸ │  FastAPI + LangChain │
+│   Vercel          │                                │  Railway / Fly       │
+│                  │◂───────────────────────────── │                      │
 │                  │     JSON suggestions            │                      │
-└────────┬─────────┘                                └──────────┬───────────┘
-         │                                                     │
-         │ ChecklistRepository                                 │ OpenWeatherMap (forecast)
-         │ (interface)                                         │ Meteostat (climate normals)
-         ▼                                                     ▼
-┌─────────────────┐                                ┌──────────────────────┐
-│  Supabase        │                                │  OpenWeatherMap API  │
-│  (PostgreSQL +   │                                │  (free tier)         │
-│   Anonymous Auth)│                                │                      │
-└─────────────────┘                                │  Meteostat library   │
-                                                   │  (30-yr normals,     │
-                                                   │   no API key)        │
-                                                   └──────────────────────┘
+└──┬──────────┬───┘                                └──────────┬───────────┘
+   │          │                                               │
+   │          │ ChecklistRepository                           │ OpenWeatherMap (forecast)
+   │          │ TripRepository                                │ Meteostat (climate normals)
+   │          │ (interfaces)                                  │
+   │          ▼                                               ▼
+   │  ┌─────────────────┐                          ┌──────────────────────┐
+   │  │  Supabase        │                          │  OpenWeatherMap API  │
+   │  │  (PostgreSQL +   │                          │  (free tier)         │
+   │  │   Anonymous Auth)│                          │                      │
+   │  └─────────────────┘                          │  Meteostat library   │
+   │                                                │  (30-yr normals,     │
+   │  AuthService                                   │   no API key)        │
+   │  (interface)                                   └──────────────────────┘
+   │          │
+   │          ▼
+   └▸ ┌─────────────────┐
+      │  Supabase Auth   │
+      │  (Anonymous Auth)│
+      └─────────────────┘
 ```
 
 **Key architectural decisions:**
@@ -37,6 +45,9 @@
 | Persistence | Supabase (PostgreSQL) + repository pattern | Production-grade PostgreSQL via Supabase. Real schema, constraints, indexes, and RLS policies. Repository interface decouples UI from storage — swap implementations without touching components. |
 | Auth | Supabase Anonymous Auth | No login screen. App auto-signs in each browser session behind the scenes. Each session gets a real UUID for RLS scoping. Upgradable to email/password later. |
 | Frontend CRUD | ChecklistRepository interface | UI programs against an abstraction. MVP ships `SupabaseChecklistRepository`. Alternative implementations (e.g., `LocalStorageChecklistRepository`) can be swapped in for offline/testing. Reduces coupling to zero. |
+| Auth abstraction | AuthService interface | Components never import Supabase auth directly. `useAuth()` hook consumes `AuthProvider` context. MVP ships `SupabaseAuthService`. Swappable to Firebase, Auth0, etc. |
+| AI suggestion abstraction | SuggestionService interface | Centralizes fetch, caching, rate limiting behind one interface. MVP ships `FastAPISuggestionService`. Components call `useAISuggestions()` — never `fetch()` directly. |
+| Trip data abstraction | TripRepository interface | Same repository pattern as checklist. MVP ships `HardcodedTripRepository`. Production swaps to `SupabaseTripRepository` with zero component changes. |
 
 ---
 
@@ -270,6 +281,71 @@ MVP ships `SupabaseChecklistRepository` implementing this interface. The reposit
 - `updated_at` auto-managed by database trigger — frontend never sets it manually
 - All fields have explicit defaults in the schema (enforced at database level, not just application level)
 
+### Service Interfaces
+
+Same decoupling pattern as `ChecklistRepository`. Components depend on interfaces, never on concrete implementations.
+
+#### AuthService
+
+Wraps authentication so components never import Supabase auth directly. Consumed via `useAuth()` hook from an `AuthProvider` context.
+
+```typescript
+interface AuthService {
+  getCurrentUser(): Promise<{ id: string; isAnonymous: boolean } | null>;
+  signInAnonymously(): Promise<void>;
+  upgradeToEmail(email: string, password: string): Promise<void>;
+  signOut(): Promise<void>;
+  onAuthStateChange(cb: (user: { id: string; isAnonymous: boolean } | null) => void): () => void;
+}
+```
+
+MVP ships `SupabaseAuthService`. The `ChecklistRepository` receives the auth service as a dependency to resolve `user_id` on inserts.
+
+#### SuggestionService
+
+Wraps the AI suggestion pipeline. Centralizes fetch, caching, rate limiting (max 3 per trip per session), and error recovery. Consumed via `useAISuggestions()` hook.
+
+```typescript
+interface SuggestionService {
+  getSuggestions(params: {
+    trip: Trip;
+    userProfile: UserProfile;
+    existingItems: string[];
+    dismissedItems: DismissedSuggestion[];
+  }): Promise<Suggestion[]>;
+  getCachedSuggestions(tripId: string): Suggestion[] | null;
+  invalidateCache(tripId: string): void;
+}
+```
+
+MVP ships `FastAPISuggestionService`. Caching is per `trip_id` in memory (session-scoped). The 3-request limit and cache invalidation are enforced inside this implementation.
+
+#### TripRepository
+
+Same pattern as `ChecklistRepository` for trip data. MVP uses hardcoded sample trips; production swaps to Supabase.
+
+```typescript
+interface TripRepository {
+  getTripById(tripId: string): Promise<Trip | null>;
+  listTrips(): Promise<Trip[]>;
+}
+```
+
+MVP ships `HardcodedTripRepository`. Production ships `SupabaseTripRepository` (schema not in MVP scope).
+
+#### Provider Wiring
+
+All interfaces provided via React context. Components consume through hooks only:
+
+| Interface | Provider | Hook | MVP Implementation |
+|-----------|----------|------|--------------------|
+| `AuthService` | `AuthProvider` | `useAuth()` | `SupabaseAuthService` |
+| `ChecklistRepository` | `RepositoryProvider` | `useChecklistRepository()` | `SupabaseChecklistRepository` |
+| `SuggestionService` | `SuggestionProvider` | `useAISuggestions()` | `FastAPISuggestionService` |
+| `TripRepository` | `RepositoryProvider` | `useTripRepository()` | `HardcodedTripRepository` |
+
+Swapping implementations requires changing only the provider setup — no component code changes.
+
 ---
 
 ## API Contracts
@@ -343,6 +419,8 @@ Response:
 - `category` must be one of the canonical taxonomy values
 - `priority` must be one of: `essential`, `recommended`, `optional`
 - Request includes `dismissed_items` so the AI avoids re-suggesting them
+
+**Abstraction:** Frontend components never call this endpoint directly. All access goes through the `SuggestionService` interface (see Service Interfaces). The `FastAPISuggestionService` implementation handles the HTTP call, response parsing, caching, and rate limiting internally.
 
 ---
 
@@ -418,8 +496,8 @@ Trip JSON + User Profile + Existing Items + Dismissed Items
 
 ### Cost Controls
 
-- Cache AI suggestions per `trip_id` — subsequent requests return cached results unless checklist changes
-- Max 3 AI suggestion requests per trip per session
+- Cache AI suggestions per `trip_id` — subsequent requests return cached results unless checklist changes. Encapsulated inside `SuggestionService.getCachedSuggestions()` — callers never manage cache state.
+- Max 3 AI suggestion requests per trip per session — enforced inside `SuggestionService` implementation, not in UI code.
 - LLM token usage logged for monitoring
 - Meteostat climate normals cached by `(lat, lon, month)` with 30-day TTL — static 30-year averages, no expiration concern
 
@@ -434,7 +512,7 @@ Trip JSON + User Profile + Existing Items + Dismissed Items
 | AI returns zero suggestions | Message: "AI has no additional suggestions for this trip." |
 | Empty checklist (no items) | Prompt: "Add items manually or tap 'Get AI Suggestions' to get started." |
 | Supabase unreachable | Toast notification: "Unable to save. Check your connection." Disable save actions; read-only mode with cached data if available. |
-| Anonymous auth fails | Retry `signInAnonymously()` up to 3 times with exponential backoff. If still failing, show "Unable to connect" screen. |
+| Anonymous auth fails | `AuthService.signInAnonymously()` retries up to 3 times with exponential backoff. If still failing, show "Unable to connect" screen. Retry logic lives inside the service, not in components. |
 | Malformed AI response | Pydantic validation catches invalid JSON. Return error to user, log for debugging. |
 | Meteostat returns empty (remote location) | Climate summary silently omitted from LLM prompt. LLM falls back to its own seasonal knowledge. No error surfaced to user. Log miss server-side. |
 | `destination.coordinates` missing | Climate step skipped entirely. Same LLM fallback. No user-visible error. Warn in server logs. |
@@ -487,6 +565,8 @@ All subsequent Supabase queries use auth.uid()
 - Anonymous users can be linked to real accounts via `supabase.auth.updateUser({ email, password })`
 - Existing data stays associated with the same `user_id` — no migration needed
 - This is the standard Supabase pattern for "try before you sign up" flows
+
+**Abstraction:** The auth flow above is encapsulated inside `SupabaseAuthService` (see Service Interfaces). Components use the `useAuth()` hook and never call `supabase.auth.*` directly. This makes the auth provider swappable without changing any component code.
 
 ---
 
