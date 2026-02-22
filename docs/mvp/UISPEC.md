@@ -13,6 +13,18 @@
 | **Target** | Mobile-only (375–430px). No tablet/desktop breakpoints for MVP. |
 | **Philosophy** | Subtract until it breaks. Every border, divider, and visual element must justify its existence. Show information on demand. |
 
+**Surviving chrome** — elements that break "subtract until it breaks" with explicit justification:
+
+| Element | Why it survives |
+|---------|----------------|
+| Progress bar (`hairline`, accent fill) | Only at-a-glance completion indicator; typography cannot communicate a continuous percentage |
+| View toggle underline (`hairline`, accent) | Two adjacent text labels need a state indicator beyond muted-vs-not color difference |
+| Suggestion banner border (`Border` token) | Zone separation between header and checklist content; barely perceptible on `Background` |
+| Sparkle emoji (✨) | AI content provenance — one Unicode character, not a badge or icon component |
+| Booking chip (📎, accent-outlined) | Three tap targets on one row (checkbox, name, chip) need visual differentiation |
+| Drag handle (`space-2xl` × `space-xs`) | iOS convention for swipe-to-dismiss affordance; minimum gesture hint |
+| Backdrop overlay (`Elevation.backdrop`) | Functional — blocks base interaction while sheet is open, not decorative |
+
 ---
 
 ## Color Tokens
@@ -33,25 +45,110 @@ Danger:      #FF3B30  (delete actions)
 
 System font stack (`-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`)
 
-**Weight scale:**
+**Type scale:**
 
-```
-Page title:      20px / 700 (semibold)
-Section header:  16px / 600 (medium)
-Item label:      16px / 400 (regular)
-Item checked:    16px / 400 (regular) + muted color
-Secondary text:  14px / 400 (regular) + muted color
-Micro label:     12px / 500 (medium) + uppercase tracking
-```
+| Token | Size | Weight | Line-height | Additional | Used for |
+|-------|------|--------|-------------|------------|----------|
+| `title` | 20px | 700 | 1.3 | | App title, trip name in checklist header |
+| `focus` | 18px | 600 | 1.3 | | Editable content under attention (bottom sheet item name) |
+| `heading` | 16px | 600 | 1.4 | | Section/category/day headers, trip name in list |
+| `body` | 16px | 400 | 1.4 | | Item labels, suggestion item names |
+| `body` + muted | 16px | 400 | 1.4 | muted color | Checked item text |
+| `caption` | 14px | 400 | 1.4 | muted color | Dates, counts, sub-headers, ghost text, reasoning, toggle labels |
+| `micro` | 12px | 500 | 1.3 | uppercase, `letter-spacing: 0.05em` | Structural labels |
 
 ## Spacing
 
-```
-Section gap:     32px  (generous breathing between categories/days)
-Item gap:        12px  (tight enough to scan, loose enough to tap)
-Horizontal pad:  20px  (wider margins for a luxurious feel)
-Touch target:    min 44px height per item row
-```
+Base unit: **4px**. All layout spacing derives from this grid.
+
+| Token | Value | Base | Used for |
+|-------|-------|------|----------|
+| `space-xs` | 4px | 1× | Drag handle height, tight internal gaps |
+| `space-sm` | 8px | 2× | Inline element gaps (icon-to-text, button padding) |
+| `space-md` | 12px | 3× | Item gap (between checklist rows) |
+| `space-lg` | 20px | 5× | Horizontal page padding |
+| `space-xl` | 24px | 6× | Suggestion card gap |
+| `space-2xl` | 32px | 8× | Section gap, trip-to-trip separation |
+
+**Component-specific values** (not composable spacing tokens):
+
+| Token | Value | Purpose |
+|-------|-------|---------|
+| `hairline` | 2px | Progress bar thickness, view toggle underline |
+| `touch-target-min` | 44px | Minimum interactive element height |
+
+## Interaction States
+
+Overlays compose across any surface color — no per-background variants needed.
+
+| Token | Value | Purpose |
+|-------|-------|---------|
+| `state-pressed` | `rgba(0, 0, 0, 0.03)` | Tap feedback on tappable rows and areas |
+| `state-pressed-accent` | `rgba(53, 167, 110, 0.08)` | Tap feedback on accent-colored text actions |
+| `state-disabled-opacity` | `0.35` | Reduced opacity for disabled elements |
+
+**Application rules:**
+
+| Element | Pressed | Disabled |
+|---------|---------|----------|
+| Trip list row | Full-row `state-pressed` tint | — |
+| Checklist item row | Full-row `state-pressed` tint | — |
+| Checkbox | Scale to 0.95 + `state-pressed` | `state-disabled-opacity` |
+| Text action (Accept, Dismiss, Retry, Delete) | `state-pressed-accent` behind text | `state-disabled-opacity` + muted color |
+| Category/day header (collapse toggle) | `state-pressed` tint on header row | — |
+| Stepper +/− buttons | `state-pressed` tint on button area | `state-disabled-opacity` (e.g., − at quantity 1) |
+| Day picker toggles | `state-pressed` tint on tap | — |
+
+## Motion
+
+**Principles:**
+
+1. **Silence first** — no animation unless it communicates spatial relationship or state change
+2. **Match the gesture** — swipe-triggered motions use spring physics; tap-triggered use ease-out
+3. **Never block** — all animations are non-blocking; user can interact immediately
+
+**Tokens:**
+
+| Token | Value | Used for |
+|-------|-------|----------|
+| `duration-quick` | 150ms | State changes: fade, checkbox fill, press feedback |
+| `duration-normal` | 250ms | Spatial changes: slide-in, collapse/expand, sheet entry |
+| `easing-default` | `cubic-bezier(0.25, 0.1, 0.25, 1.0)` | Near-linear ease-out for tap-triggered motion |
+| `easing-spring` | `cubic-bezier(0.34, 1.56, 0.64, 1)` | Swipe-release snap (delete, sheet dismiss) |
+
+**Animation catalog:**
+
+| Animation | Duration | Easing | Behavior |
+|-----------|----------|--------|----------|
+| Checkbox fill | `duration-quick` | `easing-default` | Color transition: unchecked → accent |
+| Item fade-in (add) | `duration-quick` | `easing-default` | Opacity 0 → 1 |
+| Item fade-out (dismiss/delete) | `duration-quick` | `easing-default` | Opacity 1 → 0 |
+| Suggestion slide-in (accept) | `duration-normal` | `easing-default` | Translate Y from 8px above + fade in at target position |
+| Section collapse/expand | `duration-normal` | `easing-default` | Height transition with overflow clip |
+| View toggle cross-fade | `duration-quick` | `easing-default` | Simultaneous fade-out old / fade-in new |
+| Bottom sheet entry | `duration-normal` | `easing-default` | Translate Y from bottom + backdrop fade |
+| Bottom sheet dismiss | `duration-normal` | `easing-spring` | Follows drag gesture, spring snap off-screen |
+| Swipe-to-delete | `duration-normal` | `easing-spring` | Item follows finger, springs off-screen on release |
+| Progress bar update | `duration-normal` | `easing-default` | Width transition |
+| Banner count change | `duration-quick` | `easing-default` | Number cross-fade |
+
+**Accessibility:** When `prefers-reduced-motion` is active, all `duration-*` tokens collapse to `0ms`.
+
+## Elevation
+
+No box-shadows — ever. Elevation is communicated through backdrop dimming and spatial animation.
+
+| Layer | z-index | Visual treatment |
+|-------|---------|------------------|
+| `base` | 0 | Background (`#FAFAF8`) — all page content |
+| `backdrop` | 99 | `rgba(0, 0, 0, 0.25)` — behind sheet, blocks base interaction |
+| `sheet` | 100 | Surface (`#FFFFFF`), `border-radius: 12px 12px 0 0` |
+
+**Rules:**
+- Only one overlay open at a time (MVP has only the bottom sheet)
+- Backdrop is tappable (dismisses sheet)
+- Base content scroll locked while sheet is open
+- Sheet height: 50% of viewport
 
 ---
 
@@ -94,12 +191,12 @@ Entry point. Simple vertical list of 2–3 hardcoded sample trips. No dividers �
 ```
 
 **Details:**
-- Each row: trip name (16px/600) + dates and traveler count below (14px muted)
+- Each row: trip name (`heading`) + dates and traveler count below (`caption`)
 - Progress fraction (e.g., "12/20") right-aligned on the name line — only shown if the trip has checked items. Untouched trips show no fraction.
 - No chevron (›) — the whole row is tappable. No explicit navigation affordance needed.
-- No divider lines between trips — 32px gap provides separation
-- App title "TripChecklist" (20px/700) sits at top-left with generous space below. No header bar or background.
-- Tap feedback: subtle background tint on press (rgba(0,0,0,0.03))
+- No divider lines between trips — `space-2xl` gap provides separation
+- App title "TripChecklist" (`title`) sits at top-left with generous space below. No header bar or background.
+- Tap feedback: `state-pressed` tint on full row
 
 ---
 
@@ -122,10 +219,10 @@ Single screen with these zones (top to bottom):
 ```
 
 - Back arrow (←) as a simple icon/text, no container or background bar
-- Trip name (20px/700) on the same line as back arrow
-- Trip dates + traveler count (14px muted), indented under title
-- "X of Y" text (14px muted) — no "packed" label, context is obvious
-- Progress bar: 2px thin hairline, full-width, accent (#35A76E) fill. Communicates progress without dominating.
+- Trip name (`title`) on the same line as back arrow
+- Trip dates + traveler count (`caption`), indented under title
+- "X of Y" text (`caption`) — no "packed" label, context is obvious
+- Progress bar: `hairline` thickness, full-width, `Accent` fill. Communicates progress without dominating.
 
 ### View Toggle
 
@@ -134,12 +231,12 @@ Single screen with these zones (top to bottom):
                 ────────
 ```
 
-- Two text labels (14px) side by side, right-aligned below the progress bar
-- Active label: regular weight text + 2px accent (#35A76E) underline (matches progress bar thickness)
-- Inactive label: muted color (#8E8E93), no underline
+- Two text labels (`caption`) side by side, right-aligned below the progress bar
+- Active label: regular weight text + `hairline` `Accent` underline (matches progress bar thickness)
+- Inactive label: `Text muted`, no underline
 - No pill, segment container, or background box — just text and underline
-- Tap target: full word + padding (min 44px height)
-- Cross-fade transition between views, instant
+- Tap target: full word + padding (`touch-target-min` height)
+- View toggle cross-fade (`duration-quick`, `easing-default`)
 
 ### AI Suggestions Banner
 
@@ -171,17 +268,17 @@ Single screen with these zones (top to bottom):
 ```
 
 **Behavior:**
-- Collapsed by default as a single-line strip with thin bottom border (#F0F0F0)
+- Collapsed by default as a single-line strip with thin bottom `Border`
 - "✨ N suggestions" — short label. The ✨ sparkle is the sole visual marker for AI content.
 - ▾/▴ small triangle indicator for expand/collapse state
-- Each suggestion: item name (16px/400), category · reasoning inline (14px muted, separated by middle dot ·), "Accept" (accent color text) and "Dismiss" (muted text) as text links — no boxed buttons
-- 24px whitespace separates suggestions (no dashed dividers)
-- Accept → item fades from banner, appears in correct category with brief slide-in. Banner count decreases.
-- Dismiss → card fades out. Count decreases.
+- Each suggestion: item name (`body`), category · reasoning inline (`caption`, separated by middle dot ·), "Accept" (`Accent` text) and "Dismiss" (`Text muted` text) as text links — no boxed buttons
+- `space-xl` whitespace separates suggestions (no dashed dividers)
+- Accept → item fades from banner (`duration-quick`), appears in correct category with slide-in (`duration-normal`). Banner count decreases.
+- Dismiss → card fades out (`duration-quick`). Count decreases.
 - When 0 suggestions remain → banner disappears entirely
 - No suggestions available → banner hidden (not rendered)
-- Loading state: "✨ Getting suggestions..." (14px muted italic, no animation)
-- Error state: "✨ Suggestions unavailable · Retry" (Retry in accent color, tappable)
+- Loading state: "✨ Getting suggestions..." (`caption` italic, no animation)
+- Error state: "✨ Suggestions unavailable · Retry" (Retry in `Accent`, tappable)
 - Auto-triggered on first visit to a trip
 
 ### Category View (Default)
@@ -221,22 +318,22 @@ Single screen with these zones (top to bottom):
 
 **Details:**
 - Categories as collapsible sections with ▾/▸ toggle indicator
-- Header: category name (16px/600) + fraction count right-aligned (14px muted). Tap header to collapse/expand.
+- Header: category name (`heading`) + fraction count right-aligned (`caption`). Tap header to collapse/expand.
 - Fraction count visible whether collapsed or expanded
-- Items: single-line rows — checkbox + item name + quantity in parentheses when > 1
+- Items: single-line rows — checkbox + item name (`body`) + quantity in parentheses when > 1
 - Quantity hidden when 1 (show "Swimsuit" not "Swimsuit (1)")
-- Items with a booking link: 📎 chip right-aligned on the item row (tappable, accent-outlined)
-- Checked items: accent (#35A76E) checkbox fill, muted text (no strikethrough — stays readable)
+- Items with a booking link: 📎 chip right-aligned on the item row (tappable, `Accent`-outlined)
+- Checked items: `Checked` checkbox fill, `body` + muted text (no strikethrough — stays readable)
 - Checked items sort to bottom of their category section (unchecked items rise to top)
-- "Add item" as ghost placeholder text (14px muted) at bottom of each category — no box border. Tap to activate as text field. Type name, press enter → item created with quantity 1.
+- "Add item" as ghost placeholder text (`caption`) at bottom of each category — no box border. Tap to activate as text field. Type name, press enter → item created with quantity 1.
 - Tap item name → opens bottom sheet for editing (see Item Detail section)
 - Tap checkbox → toggles check state (does not open bottom sheet)
-- Swipe left on item → reveals red delete zone. Release to confirm. Item slides off-screen.
-- Empty category: "No items yet" muted text + "Add item" ghost text visible
+- Swipe left on item → reveals `Danger` delete zone. Release to confirm. Item slides off-screen (`duration-normal`, `easing-spring`).
+- Empty category: "No items yet" `Text muted` + "Add item" ghost text visible
 
 ### Custom Categories
 
-- **"+ New category"** link (14px muted, "+" in accent color) at the bottom of all category sections
+- **"+ New category"** link (`caption`, "+" in `Accent`) at the bottom of all category sections
 - Tap → inline text field appears. Type category name, press enter → new section created
 - 10 default categories always shown (even when empty)
 - Custom categories persist until explicitly deleted
@@ -281,10 +378,10 @@ Single screen with these zones (top to bottom):
 ```
 
 **Details:**
-- Day headers: "Day N" (16px/600) + fraction count right-aligned. Theme (e.g., "Day 1 · Arrival") shown only if trip data provides a theme for that day.
+- Day headers: "Day N" (`heading`) + fraction count right-aligned (`caption`). Theme (e.g., "Day 1 · Arrival") shown only if trip data provides a theme for that day.
 - Collapsible day sections with ▾/▸ toggle (same pattern as category view)
 - Items assigned to a day but not to a specific activity appear directly under the Day header, before any activity sub-headers
-- Activity names as sub-headers (14px muted weight, slightly indented)
+- Activity names as sub-headers (`caption`, slightly indented)
 - Items: single-line rows (same as category view). Checkbox + name + optional quantity + optional 📎 booking chip right-aligned.
 - Booking chip (📎) appears on items with a `booking_link`, same behavior as in Category view
 - Checked items sort to bottom within each activity group
@@ -322,16 +419,16 @@ Opens when user taps an item name (not checkbox, not booking chip). Half-height 
 ```
 
 **Details:**
-- Drag handle (32px wide, 4px tall, centered) at top for swipe-to-dismiss
-- Item name: editable text field (18px/600). Tap to edit.
-- Quantity stepper: minus / value / plus. Minimum 1.
+- Drag handle (`space-2xl` wide, `space-xs` tall, centered) at top for swipe-to-dismiss
+- Item name: editable text field (`focus`). Tap to edit.
+- Quantity stepper: minus / value / plus. Minimum 1. Minus disabled at 1 (`state-disabled-opacity`).
 - Day picker: multi-select toggle buttons for each day (D1, D2, ... based on trip length) + "General". Filled circle (●) = selected. Tap to toggle.
 - Category dropdown: 10 defaults + custom categories + "New category..." at bottom of dropdown
-- "View booking →" link (accent color): shown only when item has a `booking_link`. Tapping opens mock deep link (MVP: navigates to placeholder URL or shows toast).
-- "Delete item" text link (danger red #FF3B30) at bottom of sheet
-- Semi-transparent backdrop behind sheet. Tap backdrop to dismiss.
+- "View booking →" link (`Accent`): shown only when item has a `booking_link`. Tapping opens mock deep link (MVP: navigates to placeholder URL or shows toast).
+- "Delete item" text link (`Danger`) at bottom of sheet
+- `Elevation.backdrop` behind sheet. Tap backdrop to dismiss.
 - Changes auto-save as user interacts — no save/cancel buttons
-- Sheet dismisses on: drag down, tap backdrop, or swipe back gesture
+- Sheet entry: `duration-normal`, `easing-default`. Dismiss: drag gesture + `easing-spring`.
 
 ---
 
@@ -339,18 +436,18 @@ Opens when user taps an item name (not checkbox, not booking chip). Half-height 
 
 | Interaction | Behavior |
 |---|---|
-| Check item | Checkbox fills accent (#35A76E). Text becomes muted. Item sorts to bottom of section. Progress bar updates. |
+| Check item | Checkbox fills `Checked` (`duration-quick`). Text becomes muted. Item sorts to bottom of section. Progress bar updates (`duration-normal`). |
 | Uncheck item | Reverses above. Item moves back to top group. |
 | Tap item name | Opens bottom sheet for editing (name, quantity, days, category, booking link, delete). |
 | Tap booking chip (📎) | Opens mock deep link. MVP: navigates to placeholder URL or shows toast "Booking links coming soon." |
-| Accept suggestion | Card fades from banner. Item appears in correct category with brief slide-in animation. Banner count decreases. |
-| Dismiss suggestion | Card fades out. Banner count decreases. At 0 remaining, banner hides. |
-| Add item (enter) | New item at bottom of category with brief fade-in. Default: quantity 1, no day assignment. |
+| Accept suggestion | Card fades from banner (`duration-quick`). Item appears in correct category with slide-in (`duration-normal`). Banner count decreases. |
+| Dismiss suggestion | Card fades out (`duration-quick`). Banner count decreases. At 0 remaining, banner hides. |
+| Add item (enter) | New item at bottom of category with fade-in (`duration-quick`). Default: quantity 1, no day assignment. |
 | Add custom category | "+ New category" at bottom. Inline text field → new section appears. |
 | Delete custom category | Swipe left on custom category header → delete. Items moved to Miscellaneous. |
-| Collapse/expand section | ▾/▸ toggle. Items slide up/down. Fraction count visible when collapsed. |
-| Switch view toggle | Cross-fade between Category and Day views. Instant, no page load. |
-| Delete item (swipe) | Swipe left → red delete zone. Release to confirm. Item slides off-screen. |
+| Collapse/expand section | ▾/▸ toggle. Items slide up/down (`duration-normal`). Fraction count visible when collapsed. |
+| Switch view toggle | Cross-fade between Category and Day views (`duration-quick`). |
+| Delete item (swipe) | Swipe left → `Danger` delete zone. Release to confirm. Item slides off-screen (`duration-normal`, `easing-spring`). |
 | Delete item (bottom sheet) | Tap "Delete item" in bottom sheet → item removed, sheet closes. |
 | Navigate back | ← arrow or swipe-back gesture. Checklist state persists (saved to Supabase). |
 
@@ -360,7 +457,7 @@ Opens when user taps an item name (not checkbox, not booking chip). Half-height 
 
 | Viewport | Treatment |
 |---|---|
-| **375–430px** | Design target. Full-width content, 20px horizontal padding. |
+| **375–430px** | Design target. Full-width content, `space-lg` horizontal padding. |
 | **431px+** | Same mobile layout, centered with `max-width: 430px`. Warm off-white (#FAFAF8) background behind. No adaptation. |
 
 Mobile-only for MVP. No tablet or desktop breakpoints.
@@ -372,9 +469,9 @@ Mobile-only for MVP. No tablet or desktop breakpoints.
 | State | Treatment |
 |---|---|
 | First visit to trip | All default categories shown empty with "Add item" ghost text. AI suggestions auto-triggered. |
-| AI loading | Banner: "✨ Getting suggestions..." (14px muted italic, no animation). |
-| AI failure | Banner: "✨ Suggestions unavailable · Retry" (Retry in accent color, tappable). |
+| AI loading | Banner: "✨ Getting suggestions..." (`caption` italic, no animation). |
+| AI failure | Banner: "✨ Suggestions unavailable · Retry" (Retry in `Accent`, tappable). |
 | AI returns 0 suggestions | Banner hidden entirely. |
-| No items in category | "No items yet" muted text + "Add item" ghost text visible. |
+| No items in category | "No items yet" `Text muted` + "Add item" ghost text visible. |
 | No suggestions | Banner not rendered. |
 | Empty day (Day view) | Day header visible with "0/0" count. No items listed. |
