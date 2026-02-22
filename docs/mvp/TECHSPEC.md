@@ -1,6 +1,7 @@
 # TripChecklist MVP — Technical Specification
 
 **Engineering companion to [PRD.md](PRD.md)**
+**UI/UX companion: [UISPEC.md](UISPEC.md)**
 
 ---
 
@@ -55,7 +56,7 @@
 
 | Layer | Choice | Notes |
 |-------|--------|-------|
-| Frontend | React (Next.js) | Mobile-first SPA. Basic CSS transitions for interactions. |
+| Frontend | React (Next.js) | Mobile-only SPA (375–430px target). Basic CSS transitions for interactions. See [UISPEC.md](UISPEC.md) for UI details. |
 | AI Engine | LangChain (Python) | Orchestrates LLM + weather tool. Pydantic output parser for structured JSON. |
 | LLM | Claude (Anthropic API) | Structured JSON output mode. Few-shot prompting for consistent checklist format. GPT-4o fallback. |
 | Forecast API | OpenWeatherMap (free tier) | LangChain Tool integration. Cached per destination+date. 5-day forecast limit only. |
@@ -125,7 +126,7 @@ Each activity includes a stable `activity_id` for reliable cross-referencing bet
 
 ### Category Taxonomy
 
-Canonical set enforced by Pydantic enum on AI output. User-added items default to "Miscellaneous" if no category selected.
+Default set enforced by Pydantic enum on AI output. Users can create additional custom categories via the UI (see [UISPEC.md](UISPEC.md)). User-added items default to "Miscellaneous" if no category selected. Custom categories are stored as free-text strings in the `category` column (no SQL CHECK constraint).
 
 | Category | Examples |
 |----------|----------|
@@ -153,11 +154,7 @@ CREATE TABLE checklist_items (
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   trip_id TEXT NOT NULL,
   item_name TEXT NOT NULL,
-  category TEXT NOT NULL CHECK (category IN (
-    'Clothing', 'Documents', 'Toiletries', 'Electronics',
-    'Health', 'Footwear', 'Accessories', 'Gear',
-    'Food & Snacks', 'Miscellaneous'
-  )),
+  category TEXT NOT NULL,  -- 10 default categories + user-created custom categories (no CHECK constraint)
   quantity INTEGER NOT NULL DEFAULT 1,
   priority TEXT NOT NULL DEFAULT 'recommended'
     CHECK (priority IN ('essential', 'recommended', 'optional')),
@@ -230,7 +227,7 @@ interface ChecklistItem {
   user_id: string;                     // auth.uid() — set automatically
   trip_id: string;
   item_name: string;
-  category: Category;                  // canonical taxonomy enum
+  category: string;                     // 10 defaults + user-created custom categories
   quantity: number;                    // default: 1
   priority: 'essential' | 'recommended' | 'optional';
   day_relevance: number[];             // PostgreSQL integer array
@@ -507,10 +504,10 @@ Trip JSON + User Profile + Existing Items + Dismissed Items
 
 | State | Behavior |
 |-------|----------|
-| AI loading | Skeleton cards with shimmer animation (~5-10s expected) |
+| AI loading | Collapsible banner: "Getting personalized suggestions..." with subtle animation (~5-10s expected) |
 | AI failure (LLM error) | Toast notification: "Suggestions unavailable. Try again." + retry button |
 | AI returns zero suggestions | Message: "AI has no additional suggestions for this trip." |
-| Empty checklist (no items) | Prompt: "Add items manually or tap 'Get AI Suggestions' to get started." |
+| Empty checklist (no items) | All default categories shown empty with inline add fields. AI suggestions auto-triggered on first visit. |
 | Supabase unreachable | Toast notification: "Unable to save. Check your connection." Disable save actions; read-only mode with cached data if available. |
 | Anonymous auth fails | `AuthService.signInAnonymously()` retries up to 3 times with exponential backoff. If still failing, show "Unable to connect" screen. Retry logic lives inside the service, not in components. |
 | Malformed AI response | Pydantic validation catches invalid JSON. Return error to user, log for debugging. |
