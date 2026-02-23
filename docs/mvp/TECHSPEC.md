@@ -67,6 +67,196 @@
 
 ---
 
+## Code Architecture
+
+Concrete file/folder structure mapping TECHSPEC interfaces to implementation files. Optimized for developer navigation speed in a 1-week AI-assisted MVP build.
+
+### Frontend (Next.js)
+
+```
+src/
+├── app/                              # Next.js App Router
+│   ├── layout.tsx                    # Root layout, global CSS, viewport meta
+│   ├── providers.tsx                 # AppProviders — composes all React contexts
+│   ├── page.tsx                      # Landing page (trip selection)
+│   └── trip/[tripId]/
+│       ├── page.tsx                  # Checklist page (Category/Day views)
+│       └── loading.tsx               # Skeleton fallback during data fetch
+│
+├── components/                       # React UI components (never import implementations/)
+│   ├── ui/                           # Reusable primitives (Button, Card, BottomSheet, Collapsible)
+│   ├── checklist/                    # Checklist feature components
+│   │   ├── ChecklistHeader.tsx       # Trip name, progress bar, view toggle
+│   │   ├── CategoryGroup.tsx         # Collapsible category with progress count
+│   │   ├── DayView.tsx              # Day timeline with activity items
+│   │   ├── ItemRow.tsx              # Single checklist item (checkbox, name, quantity, badge)
+│   │   ├── AddItemSheet.tsx         # Bottom sheet for add/edit item
+│   │   ├── QuantityStepper.tsx      # Quantity +/- control
+│   │   └── ProgressBar.tsx          # 3px accent-fill bar
+│   ├── suggestions/                  # AI suggestion components
+│   │   ├── SuggestionBanner.tsx     # Collapsible banner with loading/results
+│   │   ├── SuggestionCard.tsx       # Accept/dismiss card with reasoning
+│   │   └── SuggestionList.tsx       # List of suggestion cards
+│   └── common/                       # App-level shared components
+│       ├── ErrorBoundary.tsx         # Top-level error fallback
+│       ├── PriorityBadge.tsx        # essential/recommended/optional badge
+│       └── BookingChip.tsx          # 📎 booking link chip
+│
+├── providers/                        # React Context providers (DI wiring)
+│   ├── auth-provider.tsx             # AuthContext + creates SupabaseAuthService
+│   ├── repository-provider.tsx       # RepositoryContext + creates Supabase/Hardcoded repos
+│   └── suggestion-provider.tsx       # SuggestionContext + creates FastAPISuggestionService
+│
+├── repositories/                     # Repository pattern (data access)
+│   ├── checklist-repository.ts       # ChecklistRepository interface
+│   ├── trip-repository.ts            # TripRepository interface
+│   └── implementations/
+│       ├── supabase-checklist-repository.ts  # MVP: Supabase-backed CRUD
+│       └── hardcoded-trip-repository.ts      # MVP: Sample trip data
+│
+├── services/                         # Service interfaces (auth, AI)
+│   ├── auth-service.ts               # AuthService interface
+│   ├── suggestion-service.ts         # SuggestionService interface
+│   └── implementations/
+│       ├── supabase-auth-service.ts          # MVP: Anonymous auth
+│       └── fastapi-suggestion-service.ts     # MVP: HTTP client + cache + rate limit
+│
+├── types/                            # TypeScript types (per domain, pure — no imports)
+│   ├── checklist.ts                  # ChecklistItem, DismissedSuggestion, UserCategory
+│   ├── trip.ts                       # Trip, UserProfile, Activity
+│   └── suggestion.ts                 # Suggestion (AI response shape)
+│
+├── hooks/                            # Custom React hooks
+│   ├── use-auth.ts                   # Consumes AuthContext via useContext
+│   ├── use-checklist.ts              # Consumes RepositoryContext — checklist operations
+│   ├── use-trip.ts                   # Consumes RepositoryContext — trip data
+│   ├── use-suggestions.ts            # Consumes SuggestionContext
+│   ├── use-checklist-state.ts        # Orchestrates checklist data, optimistic updates, sort
+│   ├── use-suggestion-banner.ts      # localStorage flags, auto-trigger on first visit
+│   ├── use-local-storage.ts          # Generic localStorage hook
+│   └── use-viewport-lock.ts          # Body scroll lock for bottom sheet
+│
+├── lib/                              # Infrastructure (external clients)
+│   ├── supabase/
+│   │   └── client.ts                 # Singleton Supabase client (realtime: disabled)
+│   ├── http/
+│   │   └── fastapi-client.ts         # Configured fetch wrapper for backend API
+│   └── constants.ts                  # Category taxonomy, localStorage keys, API URLs
+│
+├── data/                             # Hardcoded MVP data
+│   └── trips.ts                      # Sample trip JSON + user profiles (typed)
+│
+├── utils/                            # Pure utility functions
+│   ├── item-sorting.ts               # Checked-to-bottom sort, category ordering
+│   └── formatting.ts                 # Date display, label formatting
+│
+└── styles/
+    ├── globals.css                   # Reset, base styles, CSS imports
+    └── tokens.css                    # UISPEC design tokens as CSS variables
+```
+
+### Backend (FastAPI)
+
+```
+backend/
+├── app/
+│   ├── __init__.py
+│   ├── main.py                       # FastAPI instance, CORS middleware, router mount
+│   ├── api/
+│   │   └── suggestions.py            # POST /api/suggestions endpoint
+│   ├── schemas/
+│   │   ├── request.py                # Pydantic models: SuggestionRequest (trip, profile, items)
+│   │   └── response.py              # Pydantic models: SuggestionResponse, ErrorResponse
+│   ├── services/
+│   │   ├── pipeline.py               # Orchestrator: climate → weather → LLM → parser → dedup
+│   │   ├── dedup.py                  # Item normalization (lowercase, trim, strip plurals) + dedup
+│   │   └── prompts.py               # System prompt, few-shot examples, prompt templates
+│   ├── clients/
+│   │   ├── anthropic_client.py       # Claude API wrapper (structured JSON output)
+│   │   ├── openweather_client.py     # OpenWeatherMap HTTP client (5-day forecast)
+│   │   └── meteostat_client.py       # Meteostat library wrapper + LRU cache
+│   ├── core/
+│   │   ├── config.py                 # Environment vars via pydantic-settings
+│   │   ├── logging.py               # Logging config (LLM token usage tracking)
+│   │   └── exceptions.py            # Custom exceptions + error response handlers
+│   └── utils/
+│       └── cache.py                  # TTL/lru_cache wrappers for climate data
+│
+├── tests/
+│   ├── test_suggestions.py           # Endpoint integration tests
+│   └── test_dedup.py                # Dedup unit tests
+│
+├── requirements.txt
+├── Dockerfile
+└── .env.example
+```
+
+### Module Dependency Rules
+
+The following import boundaries enforce the abstractions defined in this spec. Violations indicate coupling that should be refactored.
+
+```
+FRONTEND — What imports what:
+  app/            → providers/, components/, hooks/
+  components/     → hooks/, types/, utils/
+  providers/      → services/implementations/, repositories/implementations/
+  hooks/          → providers/ (via useContext), types/
+  repositories/   → types/   (interfaces only)
+  services/       → types/   (interfaces only)
+  implementations/→ lib/, types/
+  lib/            → (external packages only)
+  types/          → (nothing — pure type definitions)
+  data/           → types/
+  utils/          → (nothing — pure functions)
+
+FRONTEND — What must NEVER import what:
+  components/     ✗ repositories/, services/, implementations/, lib/supabase/
+  hooks/          ✗ implementations/
+  types/          ✗ (anything internal)
+
+BACKEND — What imports what:
+  api/            → schemas/, services/
+  services/       → clients/, schemas/, core/
+  clients/        → core/config, utils/
+  schemas/        → (nothing internal — pure Pydantic models)
+
+BACKEND — What must NEVER import what:
+  api/            ✗ clients/   (always go through services/)
+  schemas/        ✗ services/, clients/
+```
+
+### Interface-to-File Mapping
+
+| TECHSPEC Interface | Interface File | MVP Implementation File |
+|--------------------|---------------|------------------------|
+| `ChecklistRepository` | `repositories/checklist-repository.ts` | `repositories/implementations/supabase-checklist-repository.ts` |
+| `TripRepository` | `repositories/trip-repository.ts` | `repositories/implementations/hardcoded-trip-repository.ts` |
+| `AuthService` | `services/auth-service.ts` | `services/implementations/supabase-auth-service.ts` |
+| `SuggestionService` | `services/suggestion-service.ts` | `services/implementations/fastapi-suggestion-service.ts` |
+
+### Provider Wiring
+
+Providers are the **only** files that import concrete implementations. All other code depends on interfaces via hooks.
+
+| Provider | Hook | Creates | Context Value |
+|----------|------|---------|---------------|
+| `auth-provider.tsx` | `use-auth.ts` | `SupabaseAuthService` | `{ user, signIn, signOut, ... }` |
+| `repository-provider.tsx` | `use-checklist.ts`, `use-trip.ts` | `SupabaseChecklistRepository`, `HardcodedTripRepository` | `{ checklistRepo, tripRepo }` |
+| `suggestion-provider.tsx` | `use-suggestions.ts` | `FastAPISuggestionService` | `{ getSuggestions, cached, ... }` |
+
+Composed in `app/providers.tsx`:
+```tsx
+<AuthProvider>
+  <RepositoryProvider>
+    <SuggestionProvider>
+      {children}
+    </SuggestionProvider>
+  </RepositoryProvider>
+</AuthProvider>
+```
+
+---
+
 ## Data Models
 
 ### User Profile Schema
