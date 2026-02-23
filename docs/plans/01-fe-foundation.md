@@ -97,7 +97,7 @@
 ### Integration (#9)
 <!-- parallel: sequential | executor: lead | depends_on: ALL -->
 
-- [ ] Test: All type exports are importable from their modules without circular dependencies; module dependency rules match TECHSPEC (types import nothing, utils import nothing, lib imports only external packages)
+- [x] Test: All type exports are importable from their modules without circular dependencies; module dependency rules match TECHSPEC (types import nothing, utils import nothing, lib imports only external packages)
 
 ---
 
