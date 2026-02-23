@@ -1,7 +1,10 @@
 node_modules/
 dist/
+.next/
 .env
 .env.local
 .DS_Store
 *.log
 .claude/settings.local.json
+.claude/worktrees/
+.serena/
