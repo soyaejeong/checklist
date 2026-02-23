@@ -3,7 +3,7 @@
 **Version:** 1.0
 **Created:** 2026-02-23
 **Target Completion:** 2026-02-25
-**Status:** Not Started
+**Status:** In Progress
 
 ---
 
@@ -54,10 +54,10 @@
 
 **Goal:** Supabase migration ready, mock infrastructure in place, providers compose correctly, test helper works. This establishes shared infrastructure that all independent sections depend on.
 
-- [ ] Test: `001_checklist_schema.sql` contains valid SQL creating `checklist_items`, `dismissed_suggestions`, `user_categories` tables with all columns, CHECK constraints (priority, quantity, assigned_day/activity_ref mutual exclusion), indexes, RLS policies, and `update_updated_at` trigger matching TECHSPEC
-- [ ] Test: Mock Supabase client provides chainable query builder (`.from().select().eq().order()` returns `{ data, error }`), auth methods (`getUser`, `signInAnonymously`, `onAuthStateChange`), and test fixtures provide `createMockChecklistItem()` and `createMockUser()` factories with predefined scenarios
-- [ ] Test: `AppProviders` renders children within nested AuthProvider > RepositoryProvider > SuggestionProvider without errors; create minimal provider skeletons with context defaults
-- [ ] Test: `createTestWrapper()` helper produces a React component wrapping children in all providers with mock implementations; a trivial hook renders without errors in the wrapper
+- [x] Test: `001_checklist_schema.sql` contains valid SQL creating `checklist_items`, `dismissed_suggestions`, `user_categories` tables with all columns, CHECK constraints (priority, quantity, assigned_day/activity_ref mutual exclusion), indexes, RLS policies, and `update_updated_at` trigger matching TECHSPEC
+- [x] Test: Mock Supabase client provides chainable query builder (`.from().select().eq().order()` returns `{ data, error }`), auth methods (`getUser`, `signInAnonymously`, `onAuthStateChange`), and test fixtures provide `createMockChecklistItem()` and `createMockUser()` factories with predefined scenarios
+- [x] Test: `AppProviders` renders children within nested AuthProvider > RepositoryProvider > SuggestionProvider without errors; create minimal provider skeletons with context defaults
+- [x] Test: `createTestWrapper()` helper produces a React component wrapping children in all providers with mock implementations; a trivial hook renders without errors in the wrapper
 
 **Commit checkpoint:** Steel thread complete — migration SQL validated, mock infrastructure ready, providers compose, test helper working.
 
