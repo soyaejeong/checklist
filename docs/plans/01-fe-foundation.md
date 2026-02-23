@@ -64,10 +64,10 @@
 <!-- parallel: independent | files: src/types/checklist.ts, src/types/trip.ts, src/types/suggestion.ts, src/lib/constants.ts, src/data/trips.ts, tests/types/checklist.test.ts, tests/types/trip.test.ts, tests/types/suggestion.test.ts, tests/lib/constants.test.ts, tests/data/trips.test.ts -->
 
 #### Behavioral Tests
-- [ ] Test: `checklist.ts` exports ChecklistItem, DismissedSuggestion, and UserCategory types matching TECHSPEC schema fields (type assertion tests with valid/invalid objects)
-- [ ] Test: `trip.ts` exports Trip, UserProfile, and Activity types; `suggestion.ts` exports Suggestion type — all matching TECHSPEC data shapes
-- [ ] Test: `constants.ts` exports CATEGORIES array with 10 taxonomy entries, localStorage key factory, and API URL configuration
-- [ ] Test: `trips.ts` exports sample Trip objects with complete structure (travelers, itinerary with activity_ids, destination with coordinates)
+- [x] Test: `checklist.ts` exports ChecklistItem, DismissedSuggestion, and UserCategory types matching TECHSPEC schema fields (type assertion tests with valid/invalid objects)
+- [x] Test: `trip.ts` exports Trip, UserProfile, and Activity types; `suggestion.ts` exports Suggestion type — all matching TECHSPEC data shapes
+- [x] Test: `constants.ts` exports CATEGORIES array with 10 taxonomy entries, localStorage key factory, and API URL configuration
+- [x] Test: `trips.ts` exports sample Trip objects with complete structure (travelers, itinerary with activity_ids, destination with coordinates)
 
 ---
 
@@ -86,11 +86,11 @@
 <!-- parallel: independent | files: src/utils/item-sorting.ts, src/utils/formatting.ts, src/hooks/use-local-storage.ts, src/hooks/use-viewport-lock.ts, tests/utils/item-sorting.test.ts, tests/utils/formatting.test.ts, tests/hooks/use-local-storage.test.ts, tests/hooks/use-viewport-lock.test.ts -->
 
 #### Behavioral Tests
-- [ ] Test: `useLocalStorage` hook reads initial value from localStorage, writes updates with JSON serialization, and returns fallback for missing keys
-- [ ] Test: `useViewportLock` hook applies `overflow: hidden` and `overscroll-behavior: none` to document body when active, restores on deactivate/unmount
-- [ ] Test: `formatting` displays dates in human-readable format and formats labels (e.g., quantity display, priority labels)
-- [ ] Test: `item-sorting` sorts checked items to bottom of group while preserving insertion order for unchecked items
-- [ ] Test: `item-sorting` orders items by category taxonomy (CATEGORIES array index) when sorting by category
+- [x] Test: `useLocalStorage` hook reads initial value from localStorage, writes updates with JSON serialization, and returns fallback for missing keys
+- [x] Test: `useViewportLock` hook applies `overflow: hidden` and `overscroll-behavior: none` to document body when active, restores on deactivate/unmount
+- [x] Test: `formatting` displays dates in human-readable format and formats labels (e.g., quantity display, priority labels)
+- [x] Test: `item-sorting` sorts checked items to bottom of group while preserving insertion order for unchecked items
+- [x] Test: `item-sorting` orders items by category taxonomy (CATEGORIES array index) when sorting by category
 
 ---
 
