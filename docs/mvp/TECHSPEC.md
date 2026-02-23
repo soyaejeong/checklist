@@ -62,7 +62,7 @@
 | Forecast API | OpenWeatherMap (free tier) | LangChain Tool integration. Cached per destination+date. 5-day forecast limit only. |
 | Climate data | Meteostat (Python library) | Pre-processing step (not a LangChain Tool). 30-year monthly normals for any lat/lon. No API key, no rate limits. `pip install meteostat`. Cached long-term. |
 | Backend | FastAPI (Python) | AI suggestions endpoint only. Single endpoint: `POST /api/suggestions`. |
-| Persistence | Supabase (PostgreSQL) | Production-grade hosted PostgreSQL. Anonymous auth for no-login UX. RLS policies for data isolation. Swappable via `ChecklistRepository` interface. |
+| Persistence | Supabase (PostgreSQL) | Production-grade hosted PostgreSQL. Anonymous auth for no-login UX. RLS policies for data isolation. Swappable via `ChecklistRepository` interface. **Realtime disabled** — unnecessary for single-user checklist. Initialize with `realtime: { enabled: false }`. All data via direct PostgREST calls. |
 | Hosting | Vercel (FE) + Railway/Fly (BE) | Fast deploy. Free tier sufficient for demo. |
 
 ---
@@ -126,7 +126,7 @@ Each activity includes a stable `activity_id` for reliable cross-referencing bet
 
 ### Category Taxonomy
 
-Default set enforced by Pydantic enum on AI output. Users can create additional custom categories via the UI (see [UISPEC.md](UISPEC.md)). User-added items default to "Miscellaneous" if no category selected. Custom categories are stored as free-text strings in the `category` column (no SQL CHECK constraint).
+Default set enforced by Pydantic enum on AI output. Users can create additional custom categories via the UI (see [UISPEC.md](UISPEC.md)). User-added items default to "Miscellaneous" if no category selected. Custom categories are stored as free-text strings in the `category` column (no SQL CHECK constraint). Custom categories are also persisted in the `user_categories` table so they survive even when empty. The 10 default categories are always rendered (even when empty) and are not stored in `user_categories`. Deleting a custom category atomically reassigns its items to "Miscellaneous" via `deleteCategory()`. AI suggestions only use the 10 canonical categories.
 
 | Category | Examples |
 |----------|----------|
@@ -155,11 +155,13 @@ CREATE TABLE checklist_items (
   trip_id TEXT NOT NULL,
   item_name TEXT NOT NULL,
   category TEXT NOT NULL,  -- 10 default categories + user-created custom categories (no CHECK constraint)
-  quantity INTEGER NOT NULL DEFAULT 1,
+  quantity INTEGER NOT NULL DEFAULT 1 CHECK (quantity >= 1),
   priority TEXT NOT NULL DEFAULT 'recommended'
     CHECK (priority IN ('essential', 'recommended', 'optional')),
-  day_relevance INTEGER[] NOT NULL DEFAULT '{}',
-  activity_ref TEXT,
+  assigned_day INTEGER,             -- null = General (no day assignment)
+  activity_ref TEXT,                -- null = no activity assignment
+  -- Mutual exclusion: item assigned to day OR activity, not both
+  CHECK (NOT (assigned_day IS NOT NULL AND activity_ref IS NOT NULL)),
   reasoning TEXT,
   checked BOOLEAN NOT NULL DEFAULT FALSE,
   booking_link TEXT,
@@ -180,9 +182,21 @@ CREATE TABLE dismissed_suggestions (
   UNIQUE (user_id, trip_id, item_name, category)
 );
 
+-- Custom categories table (persists empty custom categories)
+CREATE TABLE user_categories (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  trip_id TEXT NOT NULL,
+  category_name TEXT NOT NULL,
+  display_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (user_id, trip_id, category_name)
+);
+
 -- Performance indexes
 CREATE INDEX idx_checklist_items_user_trip ON checklist_items(user_id, trip_id);
 CREATE INDEX idx_dismissed_user_trip ON dismissed_suggestions(user_id, trip_id);
+CREATE INDEX idx_user_categories_user_trip ON user_categories(user_id, trip_id);
 
 -- Auto-update updated_at trigger
 CREATE OR REPLACE FUNCTION update_updated_at()
@@ -205,6 +219,7 @@ Every table is locked down so users can only access their own data. Anonymous au
 ```sql
 ALTER TABLE checklist_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE dismissed_suggestions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_categories ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users manage own checklist items"
   ON checklist_items FOR ALL
@@ -213,6 +228,11 @@ CREATE POLICY "Users manage own checklist items"
 
 CREATE POLICY "Users manage own dismissed suggestions"
   ON dismissed_suggestions FOR ALL
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users manage own categories"
+  ON user_categories FOR ALL
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 ```
@@ -230,8 +250,8 @@ interface ChecklistItem {
   category: string;                     // 10 defaults + user-created custom categories
   quantity: number;                    // default: 1
   priority: 'essential' | 'recommended' | 'optional';
-  day_relevance: number[];             // PostgreSQL integer array
-  activity_ref: string | null;         // references activity_id from trip JSON
+  assigned_day: number | null;         // null = General (no day assignment)
+  activity_ref: string | null;         // references activity_id from trip JSON; mutually exclusive with assigned_day
   reasoning: string | null;            // AI-generated reasoning (null for user-added)
   checked: boolean;                    // default: false
   booking_link: string | null;
@@ -249,6 +269,15 @@ interface DismissedSuggestion {
   activity_ref: string | null;
   dismissed_at: string;                // ISO 8601
 }
+
+interface UserCategory {
+  id: string;
+  user_id: string;
+  trip_id: string;
+  category_name: string;
+  display_order: number;               // default: 0
+  created_at: string;                  // ISO 8601
+}
 ```
 
 ### Repository Interface
@@ -265,6 +294,11 @@ interface ChecklistRepository {
 
   getDismissed(tripId: string): Promise<DismissedSuggestion[]>;
   dismissSuggestion(tripId: string, itemName: string, category: string | null): Promise<void>;
+
+  getCustomCategories(tripId: string): Promise<UserCategory[]>;
+  addCustomCategory(tripId: string, categoryName: string): Promise<UserCategory>;
+  deleteCategory(tripId: string, categoryName: string): Promise<void>;
+  // deleteCategory: batch-updates all items in that category to "Miscellaneous", then deletes the category row
 }
 ```
 
@@ -272,11 +306,25 @@ MVP ships `SupabaseChecklistRepository` implementing this interface. The reposit
 
 **Key design decisions (preserved from consensus review):**
 - `priority` field matches AI response format (was missing in original PRD)
-- `activity_ref` references `activity_id` from trip JSON (stable ID, not descriptive string)
+- `assigned_day` is a single integer (replaces `day_relevance` array) — items belong to one day or one activity, not both
+- `activity_ref` references `activity_id` from trip JSON (stable ID, not descriptive string); mutually exclusive with `assigned_day` (enforced by CHECK constraint)
 - Dismissed suggestions include `category` for robust dedup (unique constraint on `user_id + trip_id + item_name + category`)
 - `user_id` column + RLS ensures data isolation even with anonymous auth
 - `updated_at` auto-managed by database trigger — frontend never sets it manually
 - All fields have explicit defaults in the schema (enforced at database level, not just application level)
+
+**Optimistic updates:** Repository methods (`toggleCheck`, `addItem`, `updateItem`) should apply **optimistic updates** — update local state immediately, then confirm with Supabase. On failure, rollback local state and show toast error. This prevents perceivable latency on mobile networks.
+
+### Frontend Rendering Rules
+
+The following behaviors are implemented as client-side rendering logic, not persisted in the database:
+
+| Rule | Description |
+|------|-------------|
+| Checked-to-bottom | Checked items sort to the bottom of their category/day group; unchecked items stay in insertion order |
+| Progress computation | "X of Y" counts computed client-side from `getItems()` result — no server-side aggregation |
+| Scroll restoration | Per-view scroll offset stored in React state (sessionStorage fallback); preserved when switching between Category and Day views |
+| Category ordering | Default 10 categories rendered in taxonomy order; custom categories appear after defaults in `display_order` |
 
 ### Service Interfaces
 
@@ -382,7 +430,7 @@ Response:
       "category": "Footwear",
       "quantity": 1,
       "priority": "essential",
-      "day_relevance": [2],
+      "assigned_day": null,
       "activity_ref": "d2-hallasan",
       "reasoning": "6-8hr Eorimok trail requires ankle support",
       "booking_link": null
@@ -392,8 +440,8 @@ Response:
       "category": "Health",
       "quantity": 1,
       "priority": "essential",
-      "day_relevance": [1, 2, 3],
-      "activity_ref": "general",
+      "assigned_day": null,
+      "activity_ref": null,
       "reasoning": "User has pollen allergy — Jeju April is peak pollen season",
       "booking_link": null
     },
@@ -402,7 +450,7 @@ Response:
       "category": "Clothing",
       "quantity": 1,
       "priority": "recommended",
-      "day_relevance": [2],
+      "assigned_day": null,
       "activity_ref": "d2-hallasan",
       "reasoning": "Summit temp ~8°C. User profile: gets cold easily",
       "booking_link": null
@@ -412,7 +460,9 @@ Response:
 ```
 
 **Notes:**
-- `activity_ref` uses `activity_id` from trip JSON (e.g., `"d2-hallasan"`) or `"general"` for all-day items
+- `assigned_day` is a single integer (day number) or `null` for General items. Mutually exclusive with `activity_ref`.
+- `activity_ref` uses `activity_id` from trip JSON (e.g., `"d2-hallasan"`) or `null` when item is assigned to a day or is General
+- When AI assigns an item to an activity, `assigned_day` must be `null` (the day is implied by the activity)
 - `category` must be one of the canonical taxonomy values
 - `priority` must be one of: `essential`, `recommended`, `optional`
 - Request includes `dismissed_items` so the AI avoids re-suggesting them
@@ -514,6 +564,17 @@ Trip JSON + User Profile + Existing Items + Dismissed Items
 | Meteostat returns empty (remote location) | Climate summary silently omitted from LLM prompt. LLM falls back to its own seasonal knowledge. No error surfaced to user. Log miss server-side. |
 | `destination.coordinates` missing | Climate step skipped entirely. Same LLM fallback. No user-visible error. Warn in server logs. |
 
+### Banner UI State Persistence
+
+The AI suggestion banner's UI state is persisted in `localStorage` (not Supabase) since it's ephemeral UI preference, not user data:
+
+| Key | Type | Purpose |
+|-----|------|---------|
+| `tripchecklist_banner_seen_<tripId>` | boolean | Tracks whether AI suggestions have been triggered for this trip. Controls auto-trigger on first visit (UISPEC: "Expanded on first visit"). |
+| `tripchecklist_banner_expanded_<tripId>` | boolean | Tracks collapsed/expanded state. First visit = expanded; subsequent visits = collapsed. |
+
+These keys live outside the repository pattern — direct `localStorage` access from the suggestion banner component. The `SuggestionService` checks `banner_seen` to decide auto-trigger behavior. Clearing browser data resets these flags (new user gets first-visit behavior again, which is the correct UX).
+
 ---
 
 ## Security Considerations
@@ -585,3 +646,18 @@ All subsequent Supabase queries use auth.uid()
 | `OPENWEATHERMAP_KEY` | Railway/Fly (Backend) | Weather forecast API key |
 
 **Note:** No `SUPABASE_SERVICE_ROLE_KEY` needed. All frontend access goes through the anon key + RLS. The service role key is only needed for admin operations (migrations, user management) done via CLI or dashboard.
+
+---
+
+## Mobile Viewport & Browser Handling
+
+| Concern | Implementation |
+|---------|---------------|
+| Viewport meta | `<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">` |
+| Safe areas | Bottom sheet respects `env(safe-area-inset-bottom)` via `padding-bottom` |
+| Sheet height | Use `dvh` units for bottom sheet: `height: 65dvh` (falls back to `65vh`) |
+| Scroll locking | `overscroll-behavior: none` on body while sheet is open; prevents pull-to-refresh |
+| Sticky header | `position: sticky; top: 0; z-index: 10` — tested on iOS Safari with safe-area insets |
+| Reduced motion | `prefers-reduced-motion: reduce` → all `duration-*` tokens collapse to `0ms` (per UISPEC) |
+
+**No PWA for MVP** — Web App Manifest, Service Worker, and offline support deferred to v1.1 (per PRD Post-MVP roadmap). The app requires an active network connection for all CRUD operations and AI suggestions.

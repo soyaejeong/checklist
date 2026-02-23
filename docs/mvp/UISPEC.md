@@ -20,9 +20,9 @@
 | Progress bar (3px, accent fill, rounded caps) | Only at-a-glance completion indicator; typography cannot communicate a continuous percentage |
 | View toggle underline (3px, accent) | Two adjacent text labels need a state indicator beyond muted-vs-not color difference |
 | Sparkle emoji (✨) | AI content provenance — one Unicode character, not a badge or icon component |
-| Booking chip (📎, accent-outlined) | Three tap targets on one row (checkbox, name, chip) need visual differentiation |
+| Booking chip (📎, `Accent text`-outlined) | Three tap targets on one row (checkbox, name, chip) need visual differentiation |
 | Backdrop overlay (`Elevation.backdrop`) | Functional — blocks base interaction while sheet is open, not decorative |
-| Text actions (`Accent text` color) | Accept, Retry, + New category — accent text reinforces actionability without adding button chrome |
+| Text actions (`Accent text` color) | Accept, Retry, + New category — accent text reinforces actionability without adding button chrome. Dismiss uses `Text muted` to de-emphasize non-constructive choices. |
 | Suggestion dividers (`Border` inside card) | Multiple suggestions in one card need visual separation for scannability |
 
 ---
@@ -35,13 +35,12 @@ Surface:          #FFFFFF  (card white)
 Surface tinted:   #F0F9F4  (subtle green tint — suggestion cards, completion feedback)
 Text:             #1C1C1E  (primary — iOS-style near-black)
 Text muted:       #5C5650  (warm gray secondary — WCAG 4.5:1 on Surface and Accent soft)
-Text hint:        #767069  (ghost text — WCAG 4.5:1 on Surface; placeholders only)
+Text hint:        #767069  (placeholder text — WCAG 4.5:1 on Surface; placeholders only)
 Border:           #E8E4DE  (warm border — card edges, dividers)
 Border tinted:    #D4E8DC  (green-tinted border — card-tinted edges)
 Accent:           #35A76E  (brand green — fills, progress bar, checkbox, underline)
 Accent text:      #217A4B  (brand green for text — WCAG 4.5:1 on Surface, Background, and Surface tinted)
 Accent soft:      #E8F5EE  (light green wash — checked row backgrounds, selected toggles)
-Checked:          #35A76E
 Unchecked:        #D1CEC8  (warm soft outline)
 Danger:           #C5291F  (delete actions — WCAG 4.5:1 on Surface)
 ```
@@ -59,9 +58,8 @@ System font stack (`-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 | `title` | 20px | 700 | 1.3 | | App title, trip name in checklist header |
 | `focus` | 18px | 600 | 1.3 | | Editable content under attention (bottom sheet item name) |
 | `heading` | 16px | 600 | 1.4 | | Section/category/day headers, trip name in list |
-| `body` | 16px | 400 | 1.4 | | Item labels, suggestion item names |
-| `body` + muted | 16px | 400 | 1.4 | `Text muted` color | Checked item text |
-| `caption` | 14px | 400 | 1.4 | `Text muted` color | Dates, counts, sub-headers, ghost text, reasoning, toggle labels |
+| `body` | 16px | 400 | 1.4 | | Item labels, suggestion item names. Checked item text uses `body` with `Text muted` color. |
+| `caption` | 14px | 400 | 1.4 | `Text muted` color | Dates, counts, sub-headers, placeholder text, reasoning, toggle labels. AI loading state uses italic variant. |
 | `micro` | 12px | 500 | 1.3 | uppercase, `letter-spacing: 0.05em`, `Text` color (not muted) | Structural labels |
 
 ## Spacing
@@ -92,6 +90,7 @@ Overlays compose across any surface color — no per-background variants needed.
 |-------|-------|---------|
 | `state-pressed` | `rgba(0, 0, 0, 0.03)` | Tap feedback on tappable rows and areas |
 | `state-pressed-accent` | `rgba(53, 167, 110, 0.08)` | Tap feedback on accent-colored text actions |
+| `state-pressed-danger` | `rgba(197, 41, 31, 0.08)` | Tap feedback on danger-colored text actions |
 | `state-disabled-opacity` | `0.35` | Reduced opacity for disabled elements |
 
 **Application rules:**
@@ -102,7 +101,12 @@ Overlays compose across any surface color — no per-background variants needed.
 | Checklist item row | Full-row `state-pressed` tint | — |
 | Checked item row | `Accent soft` (#E8F5EE) background (persistent, not just on press) | — |
 | Checkbox | Scale to 0.95 + `state-pressed` | `state-disabled-opacity` |
-| Text action (Accept, Dismiss, Retry, Delete) | `state-pressed-accent` behind text | `state-disabled-opacity` + muted color |
+| Text action (Accept, Retry, View booking) | `state-pressed-accent` behind text | `state-disabled-opacity` + `Text muted` color |
+| Text action (Dismiss) | `state-pressed-accent` behind text | `state-disabled-opacity` + `Text muted` color |
+| Text action (Delete item) | `state-pressed-danger` behind text | `state-disabled-opacity` + `Text muted` color |
+| Back arrow (←) | `state-pressed` tint | — |
+| Booking chip (📎) | `state-pressed` tint | — |
+| AI banner header (tap to expand) | `state-pressed` tint on header row | — |
 | Day card header (collapse toggle) | `state-pressed` tint on header row | — |
 | Stepper +/− buttons | `state-pressed` tint on button area | `state-disabled-opacity` (e.g., − at quantity 1) |
 | "Assign to" picker items | `state-pressed` tint on tap | — |
@@ -118,7 +122,7 @@ All interactive elements must show a visible focus indicator for keyboard and sw
 
 **Rules:**
 - Focus ring appears only on keyboard/switch navigation (`:focus-visible`), not on pointer clicks
-- Applied to: checkboxes, text actions, day collapse toggles, view toggle, stepper buttons, "Assign to" picker, bottom sheet controls, trip cards
+- Applied to: checkboxes, text actions, day collapse toggles, view toggle, stepper buttons, "Assign to" picker, bottom sheet controls, trip cards, back arrow, booking chip, AI banner toggle
 - Focus ring color uses `Accent text` for sufficient contrast on both Background and Surface
 - Use `outline` with `outline-offset: 2px` (not `box-shadow`) to avoid clipping inside cards with `overflow: hidden`. Cards containing interactive children must not clip outlines (`overflow: visible` or `overflow: clip` with sufficient padding).
 
@@ -152,6 +156,7 @@ All interactive elements must show a visible focus indicator for keyboard and sw
 | Bottom sheet entry | `duration-normal` | `easing-default` | Translate Y from bottom + backdrop fade |
 | Bottom sheet dismiss | `duration-normal` | `easing-default` | Slide down + backdrop fade out |
 | Progress bar update | `duration-normal` | `easing-default` | Width transition |
+| Banner expand/collapse | `duration-normal` | `easing-default` | Height transition with overflow clip (mirrors section collapse) |
 | Banner count change | `duration-quick` | `easing-default` | Number cross-fade |
 
 **Accessibility:** When `prefers-reduced-motion` is active, all `duration-*` tokens collapse to `0ms`.
@@ -163,7 +168,7 @@ Elevation is communicated through **tonal contrast + borders** — white cards o
 | Layer | z-index | Visual treatment |
 |-------|---------|------------------|
 | `base` | 0 | Background (`#F5F3EE`) — warm cream page canvas |
-| `card` | auto | Surface (`#FFFFFF`), `border: 1px solid #E8E4DE`, `border-radius: 12px` |
+| `card` | auto | Surface (`#FFFFFF`), `border: 1px solid Border`, `border-radius: 12px` |
 | `card-tinted` | auto | Surface tinted (`#F0F9F4`), `border: 1px solid Border tinted`, `border-radius: 12px` |
 | `backdrop` | 99 | `rgba(0, 0, 0, 0.3)` — behind sheet, blocks base interaction |
 | `sheet` | 100 | Surface (`#FFFFFF`), `border-radius: 16px 16px 0 0` |
@@ -230,7 +235,7 @@ Entry point. Simple vertical list of 2–3 hardcoded sample trips. Each trip is 
 - No chevron (›) — the whole card is tappable. No explicit navigation affordance needed.
 - `space-md` (12px) gap between cards
 - App title "TripChecklist" (`title`) sits at top-left on the cream canvas with generous space below. No header bar or background.
-- Tap feedback: card background shifts to `Background` (#F5F3EE) — the cream bleeds through subtly
+- Tap feedback: card background shifts to `Background` (#F5F3EE) — the cream bleeds through subtly. Exception: Trip cards use tonal shift (Surface → Background) rather than `state-pressed` overlay, because the cream bleed-through reinforces the warm layering aesthetic.
 
 ---
 
@@ -266,7 +271,7 @@ The header is a full-width `card` zone — white surface with `Border` bottom ed
 - Trip name (`title`) on the same line as back arrow
 - Trip dates + traveler count (`caption`), indented under title
 - "X of Y" text (`caption`) — no "packed" label, context is obvious
-- Progress bar: **3px** thickness with `border-radius: 2px` (rounded caps), full-width. Warm `Border` track (`#E8E4DE`) behind `Accent text` fill. More tactile and satisfying than hairline.
+- Progress bar: **3px** thickness with `border-radius: 2px` (rounded caps), full-width. Warm `Border` track (`#E8E4DE`) behind `Accent` fill. More tactile and satisfying than hairline.
 - Header surface: `Surface` background with `Border` bottom edge only (no side/top radius — spans full width)
 
 ### View Toggle
@@ -279,7 +284,7 @@ Lives inside the header card, right-aligned below the progress bar.
 ```
 
 - Two text labels (`caption`) side by side, right-aligned
-- Active label: regular weight text + **3px** `Accent text` underline (matches progress bar thickness)
+- Active label: regular weight text + **3px** `Accent` underline (matches progress bar thickness)
 - Inactive label: `Text muted`, no underline
 - No pill, segment container, or background box — just text and underline
 - Tap target: full word + padding (`touch-target-min` height)
@@ -288,19 +293,19 @@ Lives inside the header card, right-aligned below the progress bar.
 
 ### AI Suggestions Banner
 
-Uses the `card-tinted` surface — green-tinted card that visually communicates "AI-generated content" without explanation.
+Uses the `card-tinted` surface — green-tinted card that visually communicates "AI-generated content" without explanation. Card internal padding: `space-md` (12px).
 
 **Collapsed (default):**
 ```
   ┌───────────────────────────────┐
-  │  ✨ 3 suggestions          ▾  │  ← card-tinted (#F0F9F4, border #D4E8DC)
+  │  ✨ 3 suggestions          ▸  │  ← card-tinted (Surface tinted, Border tinted)
   └───────────────────────────────┘     border-radius: 12px
 ```
 
 **Expanded (tap banner):**
 ```
   ┌───────────────────────────────┐
-  │  ✨ 3 suggestions          ▴  │  ← card-tinted
+  │  ✨ 3 suggestions          ▾  │  ← card-tinted
   │                               │
   │  Rain jacket                  │
   │  Clothing · Rain on Day 3    │
@@ -324,9 +329,9 @@ Uses the `card-tinted` surface — green-tinted card that visually communicates 
 **Behavior:**
 - Expanded on first visit to a trip (maximizes AI feature discovery); collapsed by default on subsequent visits.
 - "✨ N suggestions" — short label. The ✨ sparkle is the sole visual marker for AI content. Wrap in `<span aria-label="AI suggested">✨</span>` for screen readers.
-- ▾/▴ small triangle indicator for expand/collapse state
+- ▸/▾ disclosure triangle for collapse/expand state (▸ collapsed, ▾ expanded — consistent with day cards)
 - Each suggestion: item name (`body`), category · reasoning inline (`caption`, separated by middle dot ·), "Accept" (`Accent text`) and "Dismiss" (`Text muted`) as `<button>` elements styled as text — no boxed buttons
-- Thin `Border` dividers between suggestions inside the card for scannability
+- 1px `Border` dividers between suggestions inside the card for scannability
 - Accept → item fades from banner (`duration-quick`), appears in correct category with slide-in (`duration-normal`). Banner count decreases.
 - Dismiss → suggestion fades out (`duration-quick`). Count decreases.
 - When 0 suggestions remain → banner disappears entirely
@@ -378,17 +383,18 @@ Each category is an individual `card` on the warm cream canvas.
 
 **Details:**
 - Each category is a `card` — Surface background, `Border` outline, `border-radius: 12px`
+- Card internal padding: `space-md` (12px)
 - `space-md` (12px) gap between category cards
 - Header: category name (`heading`) + fraction count right-aligned (`caption`)
 - Items: single-line rows — checkbox + item name (`body`) + quantity in parentheses when > 1
 - Quantity hidden when 1 (show "Swimsuit" not "Swimsuit (1)")
-- Items with a booking link: 📎 chip right-aligned on the item row (tappable, `Accent text`-outlined)
-- Checked items: `Checked` checkbox fill, `body` + muted text (no strikethrough — stays readable), **`Accent soft` (#E8F5EE) row background** — subtle green wash makes completion feel rewarding
+- Items with a booking link: 📎 booking chip right-aligned on the item row (tappable). Chip spec: `1px solid Accent text` border, `border-radius: 6px`, `space-xs` horizontal padding, `caption` typography. Pressed: `state-pressed`. Focus: standard `focus-ring`.
+- Checked items: `Accent` checkbox fill, `body` with `Text muted` color (no strikethrough — stays readable), **`Accent soft` (#E8F5EE) row background** — subtle green wash makes completion feel rewarding
 - Checked items sort to bottom of their category section (unchecked items rise to top)
-- "Add item" as ghost placeholder text in `Text hint` color at bottom of each category card. Tap to activate as text field. Type name, press enter → item created with quantity 1.
+- "Add item" as placeholder text in `Text hint` color at bottom of each category card. Tap to activate as text field. Type name, press enter → item created with quantity 1.
 - Tap item name → opens bottom sheet for editing (see Item Detail section)
 - Tap checkbox → toggles check state (does not open bottom sheet)
-- Empty category: "No items yet" `Text muted` + "Add item" ghost text visible inside the card
+- Empty category: "No items yet" `Text muted` + "Add item" placeholder text visible inside the card
 - "+ New category" link (`caption`, "+" in `Accent text`) sits **outside** any card, on the cream canvas, at the bottom of all category cards
 
 ### Custom Categories
@@ -397,12 +403,12 @@ Each category is an individual `card` on the warm cream canvas.
 - Tap → inline text field appears on the canvas. Type category name, press enter → new category card created
 - 10 default categories always shown as cards (even when empty)
 - Custom categories persist until explicitly deleted
-- Long-press on a custom category card header → delete option (only for custom categories, not defaults)
+- Long-press on a custom category card header → delete option (only for custom categories, not defaults). Keyboard/switch users: category header receives focus; pressing Delete key or activating a context menu triggers the same delete flow.
 - Deleting a custom category moves its items to "Miscellaneous"
 - In item detail bottom sheet, category dropdown shows: 10 defaults + any custom categories + "New category..." option at bottom
 - AI suggestions only use the 10 canonical categories (custom categories are user-only)
 
-### Day/Activity View
+### Day View
 
 Each day is a `card` on the warm cream canvas. Items appear under their assigned day or activity.
 
@@ -443,12 +449,12 @@ Each day is a `card` on the warm cream canvas. Items appear under their assigned
 ```
 
 **Details:**
-- Each day is a `card` — same Surface/Border/radius as category cards
+- Each day is a `card` — same Surface/Border/radius/padding as category cards (`space-md` internal padding)
 - Day headers: "Day N" (`heading`) + fraction count right-aligned (`caption`). Theme (e.g., "Day 1 · Arrival") shown only if trip data provides a theme for that day.
 - Collapsible day cards with ▾/▸ toggle on header row
 - Items assigned to a day (via "Assign to" picker in bottom sheet) appear directly under the Day header, before any activity sub-headers
 - Items assigned to a specific activity appear under that activity's sub-header
-- Activity names as sub-headers (`caption`, slightly indented)
+- Activity names as sub-headers (`caption`, indented `space-lg` from card edge)
 - Items: single-line rows (same as category view). Checkbox + name + optional quantity + optional 📎 booking chip right-aligned.
 - Booking chip (📎) appears on items with a `booking_link`, same behavior as in Category view
 - Checked items: `Accent soft` row background + muted text (same as category view), sorted to bottom within each group
@@ -515,7 +521,7 @@ Opens when user taps an item name (not checkbox, not booking chip). Fixed-height
 - Item name: editable text field (`focus`). Tap to edit.
 - Quantity stepper: minus / value / plus. Minimum 1. Minus disabled at 1 (`state-disabled-opacity`).
 - **Assign to** — full-sheet picker (navigates away from item detail sheet):
-  - Shows current assignment label (e.g., "Day 1", "Airport Transfer") or "None" when unassigned
+  - Shows current assignment label (e.g., "Day 1", "Airport Transfer") or "General" when unassigned
   - Tapping opens a full-sheet list grouped by day with nested activities (activities indented, `caption` style)
   - Selecting a **day**: item assigned to that whole day, not a specific activity
   - Selecting an **activity**: item assigned to that activity (implies its day, but binding is to the activity)
@@ -538,7 +544,7 @@ Opens when user taps an item name (not checkbox, not booking chip). Fixed-height
 
 | Interaction | Behavior |
 |---|---|
-| Check item | Checkbox fills `Checked` (`duration-quick`). Text becomes muted. Row gets `Accent soft` background. Item sorts to bottom of section. Progress bar updates (`duration-normal`). |
+| Check item | Checkbox fills `Accent` (`duration-quick`). Text becomes `Text muted`. Row gets `Accent soft` background. Item sorts to bottom of section. Progress bar updates (`duration-normal`). |
 | Uncheck item | Reverses above. `Accent soft` background removed. Item moves back to top group. |
 | Tap item name | Opens bottom sheet for editing (name, quantity, assign to day/activity, category, booking link, delete). |
 | Tap booking chip (📎) | Opens mock deep link. MVP: navigates to placeholder URL or shows toast "Booking links coming soon." |
@@ -561,6 +567,7 @@ Opens when user taps an item name (not checkbox, not booking chip). Fixed-height
 
 | Element | Implementation | Notes |
 |---------|---------------|-------|
+| AI banner toggle (▸/▾) | `<button aria-expanded="true/false" aria-label="AI suggestions">` | Announces expand/collapse state to screen readers |
 | Day card collapse toggles (▾/▸) | `<button aria-expanded="true/false">` | Day view only; announces open/closed state to screen readers |
 | Progress bar | `<div role="progressbar" aria-valuenow={checked} aria-valuemax={total}>` | Screen readers announce "X of Y complete" |
 | Accept / Dismiss / Retry | `<button>` elements (not links) | Announced as actionable controls; invisible padding to meet `touch-target-min` |
@@ -591,10 +598,10 @@ Mobile-only for MVP. No tablet or desktop breakpoints.
 
 | State | Treatment |
 |---|---|
-| First visit to trip | All default category cards shown empty with "Add item" ghost text (`Text hint`). AI suggestions auto-triggered. |
+| First visit to trip | All default category cards shown empty with "Add item" placeholder text (`Text hint`). AI suggestions auto-triggered. |
 | AI loading | `card-tinted` banner: "✨ Getting suggestions..." (`caption` italic, no animation). |
 | AI failure | `card-tinted` banner: "✨ Suggestions unavailable · Retry" (Retry in `Accent text`, tappable). |
 | AI returns 0 suggestions | Banner hidden entirely. |
-| No items in category | "No items yet" `Text muted` + "Add item" ghost text (`Text hint`) visible inside category card. |
+| No items in category | "No items yet" `Text muted` + "Add item" placeholder text (`Text hint`) visible inside category card. |
 | No suggestions | Banner not rendered. |
 | Empty day (Day view) | Day card visible with "0/0" count. "Add items in Category view" hint (`Text muted`) inside card. |
