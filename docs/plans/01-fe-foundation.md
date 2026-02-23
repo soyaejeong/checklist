@@ -49,8 +49,8 @@
 
 **Goal:** Establish a working Next.js project with Vitest, design tokens, and proof that dev server + test runner both work.
 
-- [ ] Scaffold Next.js project with TypeScript, Vitest, and config files (`package.json`, `tsconfig.json`, `next.config.js`, `vitest.config.ts`); verify `npm run dev` starts and `npm run test:unit` executes
-- [ ] Test: `tokens.css` exports all UISPEC design tokens (colors, typography, spacing, elevation, motion, interaction states) as CSS custom properties; `globals.css` imports tokens and applies reset + base styles
+- [x] Scaffold Next.js project with TypeScript, Vitest, and config files (`package.json`, `tsconfig.json`, `next.config.js`, `vitest.config.ts`); verify `npm run dev` starts and `npm run test:unit` executes
+- [x] Test: `tokens.css` exports all UISPEC design tokens (colors, typography, spacing, elevation, motion, interaction states) as CSS custom properties; `globals.css` imports tokens and applies reset + base styles
 
 **Commit checkpoint:** Steel thread complete — dev server runs, test runner works, design system tokens in place.
 
@@ -72,7 +72,7 @@
 ---
 
 ### Interfaces + Infrastructure (#7)
-<!-- parallel: independent | files: src/repositories/checklist-repository.ts, src/repositories/trip-repository.ts, src/services/auth-service.ts, src/services/suggestion-service.ts, src/lib/supabase/client.ts, src/lib/http/fastapi-client.ts, tests/repositories/checklist-repository.test.ts, tests/repositories/trip-repository.test.ts, tests/services/auth-service.test.ts, tests/services/suggestion-service.test.ts, tests/lib/supabase/client.test.ts, tests/lib/http/fastapi-client.test.ts -->
+<!-- parallel: depends_on=[Types + Constants] | files: src/repositories/checklist-repository.ts, src/repositories/trip-repository.ts, src/services/auth-service.ts, src/services/suggestion-service.ts, src/lib/supabase/client.ts, src/lib/http/fastapi-client.ts, tests/repositories/checklist-repository.test.ts, tests/repositories/trip-repository.test.ts, tests/services/auth-service.test.ts, tests/services/suggestion-service.test.ts, tests/lib/supabase/client.test.ts, tests/lib/http/fastapi-client.test.ts -->
 
 #### Behavioral Tests
 - [ ] Test: ChecklistRepository interface declares getItems, addItem, updateItem, deleteItem, toggleCheck, getDismissed, dismissSuggestion, getCustomCategories, addCustomCategory, deleteCategory with correct signatures
@@ -86,11 +86,11 @@
 <!-- parallel: independent | files: src/utils/item-sorting.ts, src/utils/formatting.ts, src/hooks/use-local-storage.ts, src/hooks/use-viewport-lock.ts, tests/utils/item-sorting.test.ts, tests/utils/formatting.test.ts, tests/hooks/use-local-storage.test.ts, tests/hooks/use-viewport-lock.test.ts -->
 
 #### Behavioral Tests
-- [ ] Test: `item-sorting` sorts checked items to bottom of group while preserving insertion order for unchecked items
-- [ ] Test: `item-sorting` orders items by category taxonomy (CATEGORIES array index) when sorting by category
-- [ ] Test: `formatting` displays dates in human-readable format and formats labels (e.g., quantity display, priority labels)
 - [ ] Test: `useLocalStorage` hook reads initial value from localStorage, writes updates with JSON serialization, and returns fallback for missing keys
 - [ ] Test: `useViewportLock` hook applies `overflow: hidden` and `overscroll-behavior: none` to document body when active, restores on deactivate/unmount
+- [ ] Test: `formatting` displays dates in human-readable format and formats labels (e.g., quantity display, priority labels)
+- [ ] Test: `item-sorting` sorts checked items to bottom of group while preserving insertion order for unchecked items
+- [ ] Test: `item-sorting` orders items by category taxonomy (CATEGORIES array index) when sorting by category
 
 ---
 
