@@ -112,6 +112,16 @@ Each checkbox should represent work completable in a single focused session (typ
 **Why:** Context switching, incomplete features, untested code
 **Good:** Finish 100%, commit, archive, THEN plan next
 
+### Worktree Splits Within Tightly Coupled Code
+**Bad:** Separate worktrees for frontend hooks and frontend components
+**Why:** They share types, hooks import providers, components import hooks — constant merge conflicts
+**Good:** Keep tightly coupled modules in one worktree; use section-level tweep for intra-slice parallelism
+
+### Multiple Merge Points with Shared Files
+**Bad:** Merge backend branch 3 times during frontend development, each touching shared config
+**Why:** Each merge risks conflicts; coordination overhead defeats parallelism gains
+**Good:** Single merge point, conflict-free by construction (separate directory trees)
+
 ---
 
 ## Parallelism Guidelines
@@ -161,6 +171,51 @@ Aim for **3-5 sections** with **2-4 tasks each**. This maps well to the 2-worker
 
 ---
 
+## Worktree Parallelism
+
+These guidelines support cross-slice parallelism using git worktrees, where multiple slices execute simultaneously in separate working directories. See [ROADMAP.md](../../../docs/ROADMAP.md) for the current wave/slice assignments.
+
+### Two Levels of Parallelism
+
+| Level | Scope | Mechanism | When |
+|-------|-------|-----------|------|
+| **Worktree-level** | Cross-slice | `git worktree add` | Different runtimes, zero shared source files |
+| **Section-level** | Within-slice | `/parallel-sweep` (tweep) | Independent sections within a single slice |
+
+Worktree parallelism is a **roadmap concern** (defined in `docs/ROADMAP.md`), not a slice-plan concern. Individual slice plans continue to use section-level parallelism metadata for tweep.
+
+### When to Use Worktrees
+
+Use separate worktrees when ALL of these conditions are met:
+- **Different runtimes** — e.g., TypeScript (Node) vs Python (FastAPI)
+- **Zero shared source files** — no file is edited by both worktrees
+- **Well-defined API contract** — integration seam is documented (e.g., in TECHSPEC), not shared code
+- **Independent dependency management** — separate `package.json` vs `requirements.txt`
+
+### When NOT to Use Worktrees
+
+Do NOT use separate worktrees for code that:
+- **Shares types/interfaces** — modules importing from common `types/` files
+- **Shares hooks or providers** — tightly coupled through React context
+- **Lives in the same runtime** — use section-level tweep instead
+- **Has frequent integration points** — would require multiple merge points
+
+### File Ownership Matrix
+
+When using worktrees, every source file must be assigned to exactly one worktree. Document this in `docs/ROADMAP.md`:
+
+- Each worktree owns specific directory trees (e.g., `src/` vs `backend/`)
+- Shared documentation (TECHSPEC, UISPEC) is **read-only** for all worktrees
+- The API contract lives in documentation, not in shared source code
+
+### Merge Strategy
+
+- **Single merge point** — merge the secondary worktree branch before the integration slice
+- **Conflict-free by construction** — if file ownership is correct, the merge has zero conflicts
+- Remove the worktree after merging: `git worktree remove <path>`
+
+---
+
 ## Key Principles
 
 - **Session-sized tasks** - Each checkbox = one focused session
@@ -168,8 +223,9 @@ Aim for **3-5 sections** with **2-4 tasks each**. This maps well to the 2-worker
 - **Progressive planning** - Just-in-time, not upfront
 - **Tidy First** - Separate structural (S) from behavioral (B)
 - **TDD rhythm** - Red → Green → Refactor → Commit
+- **Worktree isolation** - Cross-slice parallelism for independent subsystems (see ROADMAP.md)
 
 ---
 
-**Last Updated:** 2026-02-20
-**Version:** 2.0
+**Last Updated:** 2026-02-22
+**Version:** 3.0

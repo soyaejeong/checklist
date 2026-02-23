@@ -12,13 +12,25 @@
 | Commit | Prefix with `[B]` or `[S]` + include `(#issue)` from MASTER_PLAN |
 | Close section issue | `gh issue close <number>` when section complete |
 | Verify spec compliance | Say "verify spec" or use `/verifying-spec` |
+| View roadmap | See [ROADMAP.md](docs/ROADMAP.md) |
+| Create backend worktree | `git worktree add ../checklist-backend -b feat/ai-pipeline` |
+| Merge backend | `git merge feat/ai-pipeline` (before integration slice) |
 
 ## Documentation
 
-- [TECHSPEC.md](docs/mvp/TECHSPEC.md) - Architecture and specifications
+- [TECHSPEC.md](docs/mvp/TECHSPEC.md) - Architecture, file trees, and module boundaries
+- [ROADMAP.md](docs/ROADMAP.md) - MVP implementation roadmap (7 slices, 4 waves, worktree strategy)
 - [MASTER_PLAN.md](docs/MASTER_PLAN.md) - Current tasks (symlink to active plan)
 - [TESTING_STRATEGY.md](docs/TESTING_STRATEGY.md) - Test patterns and organization
-- [PLAN_GENERATION_GUIDE.md](.claude/skills/generating-plans/references/PLAN_GENERATION_GUIDE.md) - Plan quality standards (task sizing, anti-patterns)
+- [PLAN_GENERATION_GUIDE.md](.claude/skills/generating-plans/references/PLAN_GENERATION_GUIDE.md) - Plan quality standards (task sizing, anti-patterns, worktree parallelism)
+
+## Worktree Workflow
+
+Two worktrees for parallel MVP execution (see [ROADMAP.md](docs/ROADMAP.md)):
+- **main** — Frontend (`src/`), Supabase schema, project config
+- **feat/ai-pipeline** — Backend (`backend/`), Python/FastAPI
+
+Each worktree runs as an independent Claude Code session with its own tweep. Single merge point before the integration slice (Slice 7). File ownership is strict: no file is ever edited by both worktrees.
 
 ## Core Principles
 
