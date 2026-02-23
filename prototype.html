@@ -9,15 +9,20 @@
 /* ─── Design Tokens ─── */
 :root {
   /* Colors */
-  --bg: #FAFAF8;
+  --bg: #F5F3EE;
   --surface: #FFFFFF;
+  --surface-tinted: #F0F9F4;
   --text: #1C1C1E;
-  --text-muted: #8E8E93;
-  --border: #F0F0F0;
+  --text-muted: #5C5650;
+  --text-hint: #767069;
+  --border: #E8E4DE;
+  --border-tinted: #D4E8DC;
   --accent: #35A76E;
+  --accent-text: #217A4B;
+  --accent-soft: #E8F5EE;
   --checked: #35A76E;
-  --unchecked: #D1D1D6;
-  --danger: #FF3B30;
+  --unchecked: #D1CEC8;
+  --danger: #C5291F;
   --press: rgba(0,0,0,0.03);
 
   /* Typography */
@@ -47,12 +52,13 @@
   --space-lg: 20px;
   --space-xl: 24px;
   --space-2xl: 32px;
-  --hairline: 2px;
+  --bar: 3px;
   --touch-min: 44px;
   --max-width: 430px;
 
   /* Interaction states */
   --press-accent: rgba(53,167,110,0.08);
+  --press-danger: rgba(197, 41, 31, 0.08);
   --disabled-opacity: 0.35;
 
   /* Motion */
@@ -83,7 +89,7 @@ html, body {
 #app {
   max-width: var(--max-width);
   margin: 0 auto;
-  background: var(--surface);
+  background: var(--bg);
   min-height: 100vh;
   position: relative;
   overflow-x: hidden;
@@ -106,16 +112,15 @@ html, body {
 }
 
 .trip-row {
-  padding: 16px 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: var(--space-md);
   cursor: pointer;
   transition: background var(--dur-quick) var(--ease-default);
-  border-radius: 8px;
-  margin: 0 -8px;
-  padding-left: 8px;
-  padding-right: 8px;
 }
-.trip-row:active { background: var(--press); }
-.trip-row + .trip-row { margin-top: var(--space-2xl); }
+.trip-row:active { background: var(--bg); }
+.trip-row + .trip-row { margin-top: var(--space-md); }
 
 .trip-row-top {
   display: flex;
@@ -152,6 +157,7 @@ html, body {
   top: 0;
   background: var(--surface);
   z-index: 10;
+  border-bottom: 1px solid var(--border);
 }
 .header-back {
   display: flex;
@@ -192,15 +198,15 @@ html, body {
 }
 .progress-bar {
   width: 100%;
-  height: var(--hairline);
+  height: var(--bar);
   background: var(--border);
-  border-radius: 1px;
+  border-radius: 2px;
   overflow: hidden;
 }
 .progress-fill {
   height: 100%;
   background: var(--accent);
-  border-radius: 1px;
+  border-radius: 2px;
   transition: width var(--dur-normal) var(--ease-default);
 }
 
@@ -233,14 +239,17 @@ html, body {
   bottom: 0;
   left: 0;
   right: 0;
-  height: var(--hairline);
+  height: var(--bar);
   background: var(--accent);
-  border-radius: 1px;
+  border-radius: 2px;
 }
 
 /* AI Suggestions Banner */
 .suggestions-banner {
-  border-bottom: 1px solid var(--border);
+  background: var(--surface-tinted);
+  border: 1px solid var(--border-tinted);
+  border-radius: 12px;
+  margin: var(--space-md) var(--space-lg);
   overflow: hidden;
 }
 .suggestions-banner.hidden { display: none; }
@@ -249,9 +258,15 @@ html, body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px var(--space-lg);
+  padding: var(--space-md);
   cursor: pointer;
   min-height: var(--touch-min);
+  background: none;
+  border: none;
+  width: 100%;
+  font-family: var(--font);
+  text-align: left;
+  color: var(--text);
 }
 .suggestions-label {
   font-size: var(--caption-size);
@@ -263,7 +278,7 @@ html, body {
 }
 
 .suggestions-body {
-  padding: 0 var(--space-lg) 16px;
+  padding: 0 var(--space-md) var(--space-md);
   display: none;
 }
 .suggestions-banner.expanded .suggestions-body { display: block; }
@@ -272,7 +287,11 @@ html, body {
   padding: 16px 0;
   transition: opacity var(--dur-normal) var(--ease-default), transform var(--dur-normal) var(--ease-default);
 }
-.suggestion-card + .suggestion-card { margin-top: var(--space-xl); }
+.suggestion-card + .suggestion-card {
+  margin-top: 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
 .suggestion-card.removing {
   opacity: 0;
   transform: translateX(40px);
@@ -300,25 +319,33 @@ html, body {
   cursor: pointer;
   padding: 4px 0;
 }
-.btn-accept { color: var(--accent); font-weight: 500; }
+.btn-accept { color: var(--accent-text); font-weight: 500; }
 .btn-dismiss { color: var(--text-muted); }
 
 /* Category & Day Views */
 .view-container { position: relative; }
 .category-view, .day-view {
-  padding: 0 var(--space-lg);
+  padding: var(--space-md) var(--space-lg);
   transition: opacity var(--dur-normal) var(--ease-default);
 }
 .day-view { display: none; }
 
 /* Sections (Category/Day) */
-.section { margin-bottom: var(--space-2xl); }
+.section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
+}
 
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   min-height: var(--touch-min);
+}
+.section-header.collapsible {
   cursor: pointer;
   user-select: none;
 }
@@ -367,9 +394,15 @@ html, body {
   align-items: center;
   min-height: var(--touch-min);
   padding: 6px 0;
-  position: relative;
-  overflow: hidden;
   transition: opacity var(--dur-normal) var(--ease-default);
+}
+.item-row.checked {
+  background: var(--accent-soft);
+  border-radius: 8px;
+  padding-left: var(--space-sm);
+  padding-right: var(--space-sm);
+  margin-left: calc(-1 * var(--space-sm));
+  margin-right: calc(-1 * var(--space-sm));
 }
 .item-row.checked .item-label { color: var(--text-muted); }
 .item-row.removing {
@@ -378,6 +411,13 @@ html, body {
   transition: opacity var(--dur-normal) var(--ease-spring), transform var(--dur-normal) var(--ease-spring);
 }
 
+.checkbox-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
 .checkbox {
   width: 22px;
   height: 22px;
@@ -414,35 +454,16 @@ html, body {
 }
 
 .booking-chip {
-  font-size: 14px;
-  padding: 2px 8px;
-  border: 1px solid var(--accent);
-  border-radius: 12px;
+  font-size: var(--caption-size);
+  line-height: var(--caption-lh);
+  padding: 2px var(--space-xs);
+  border: 1px solid var(--accent-text);
+  border-radius: 6px;
   cursor: pointer;
   flex-shrink: 0;
-  opacity: 0.7;
   transition: opacity var(--dur-quick) var(--ease-default);
 }
 .booking-chip:hover { opacity: 1; }
-
-/* Delete zone (swipe) */
-.delete-zone {
-  position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  width: 0;
-  background: var(--danger);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: var(--caption-size);
-  font-weight: 500;
-  overflow: hidden;
-  transition: width var(--dur-normal) var(--ease-spring);
-  border-radius: 0 8px 8px 0;
-}
 
 /* Add Item */
 .add-item-row {
@@ -453,7 +474,7 @@ html, body {
 }
 .add-item-ghost {
   font-size: var(--caption-size);
-  color: var(--text-muted);
+  color: var(--text-hint);
   cursor: pointer;
   display: block;
 }
@@ -483,7 +504,7 @@ html, body {
   align-items: center;
   gap: 4px;
 }
-.new-category-btn .plus { color: var(--accent); font-weight: 600; }
+.new-category-btn .plus { color: var(--accent-text); font-weight: 600; }
 
 .new-category-input {
   font-size: var(--heading-size);
@@ -502,7 +523,7 @@ html, body {
 .sheet-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.25);
+  background: rgba(0,0,0,0.3);
   z-index: var(--z-backdrop);
   opacity: 0;
   pointer-events: none;
@@ -520,10 +541,10 @@ html, body {
   bottom: 0;
   width: 100%;
   max-width: var(--max-width);
-  max-height: 50vh;
+  max-height: 65vh;
   overflow-y: auto;
   background: var(--surface);
-  border-radius: 12px 12px 0 0;
+  border-radius: 16px 16px 0 0;
   z-index: var(--z-sheet);
   transition: transform var(--dur-normal) var(--ease-default);
   padding-bottom: env(safe-area-inset-bottom, 20px);
@@ -598,41 +619,76 @@ html, body {
   text-align: center;
 }
 
-/* Day Picker */
-.day-picker {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 8px 0;
-}
-.day-picker-label {
-  font-size: var(--body-size);
-  margin-bottom: 8px;
-}
-.day-chip {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 1.5px solid var(--unchecked);
+/* Assign-to button */
+.assign-to-btn {
+  background: none;
+  border: none;
+  font-size: var(--caption-size);
+  font-family: var(--font);
+  color: var(--text);
+  cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: var(--space-xs);
+  padding: 4px 0;
+}
+.assign-chevron {
+  color: var(--text-muted);
+  font-size: 16px;
+}
+
+/* Assign-to picker (full-sheet overlay) */
+.assign-picker {
+  padding: 0 var(--space-lg) 24px;
+}
+.assign-picker-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: var(--touch-min);
+  padding: var(--space-md) 0;
+}
+.assign-picker-title {
+  font-size: var(--heading-size);
+  font-weight: var(--heading-weight);
+}
+.assign-section-label {
   font-size: var(--micro-size);
   font-weight: var(--micro-weight);
-  cursor: pointer;
-  transition: background var(--dur-quick) var(--ease-default), border-color var(--dur-quick) var(--ease-default), color var(--dur-quick) var(--ease-default);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: var(--text);
-  background: none;
+  padding: var(--space-sm) 0;
 }
-.day-chip.selected {
-  background: var(--accent);
+.assign-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: var(--touch-min);
+  padding: var(--space-xs) var(--space-sm);
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background var(--dur-quick) var(--ease-default);
+}
+.assign-option:active { background: var(--press); }
+.assign-option.selected { background: var(--accent-soft); }
+.assign-option.activity { padding-left: var(--space-xl); }
+.assign-radio {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--unchecked);
+  flex-shrink: 0;
+  transition: border-color var(--dur-quick) var(--ease-default), background var(--dur-quick) var(--ease-default);
+}
+.assign-option.selected .assign-radio {
   border-color: var(--accent);
-  color: white;
+  background: var(--accent);
 }
-.day-chip-general {
-  width: auto;
-  border-radius: 18px;
-  padding: 0 14px;
+.assign-clear {
+  border-top: 1px solid var(--border);
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
 }
 
 /* Category Dropdown */
@@ -647,14 +703,14 @@ html, body {
   cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238E8E93' fill='none' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%235C5650' fill='none' stroke-width='1.5'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 10px center;
   padding-right: 28px;
 }
 
 .sheet-booking {
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: var(--caption-size);
   text-decoration: none;
   cursor: pointer;
@@ -678,11 +734,11 @@ html, body {
 }
 
 /* ─── Pressed / Interaction States ─── */
-.section-header:active { background: var(--press); border-radius: 8px; }
+.section-header.collapsible:active { background: var(--press); border-radius: 8px; }
 .checkbox:active { transform: scale(0.95); }
 .btn-accept:active { background: var(--press-accent); border-radius: 4px; }
 .btn-dismiss:active { background: var(--press); border-radius: 4px; }
-.sheet-delete:active { background: var(--press); border-radius: 4px; }
+.sheet-delete:active { background: var(--press-danger); border-radius: 4px; }
 .sheet-booking:active { background: var(--press-accent); border-radius: 4px; }
 
 /* Disabled stepper button (minus at qty 1) */
@@ -691,8 +747,35 @@ html, body {
   pointer-events: none;
 }
 
+/* Tabular nums for stable numeric alignment */
+.section-count,
+.trip-progress,
+.progress-text,
+.stepper-value {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Text overflow ellipsis for single-line content */
+.item-label,
+.trip-name,
+.section-name,
+.header-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Scroll lock when sheet is open */
 body.sheet-open { overflow: hidden; }
+
+/* Focus-visible states */
+:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 2px;
+}
+:focus:not(:focus-visible) {
+  outline: none;
+}
 
 /* Reduced motion accessibility */
 @media (prefers-reduced-motion: reduce) {
@@ -726,22 +809,22 @@ body.sheet-open { overflow: hidden; }
         <div class="header-meta" id="checklist-meta"></div>
         <div class="header-progress">
           <div class="progress-text" id="progress-text"></div>
-          <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+          <div class="progress-bar" id="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemax="0" aria-label="Packing progress"><div class="progress-fill" id="progress-fill"></div></div>
         </div>
 
         <!-- View Toggle -->
-        <div class="view-toggle">
-          <button class="toggle-btn active" id="toggle-category">Category</button>
-          <button class="toggle-btn" id="toggle-day">Day</button>
+        <div class="view-toggle" role="tablist">
+          <button class="toggle-btn active" id="toggle-category" role="tab" aria-selected="true">Category</button>
+          <button class="toggle-btn" id="toggle-day" role="tab" aria-selected="false">Day</button>
         </div>
       </div>
 
       <!-- AI Suggestions Banner -->
       <div class="suggestions-banner" id="suggestions-banner">
-        <div class="suggestions-header" id="suggestions-header">
+        <button class="suggestions-header" id="suggestions-header" aria-expanded="false" aria-label="AI suggestions">
           <span class="suggestions-label" id="suggestions-label"></span>
           <span class="suggestions-toggle" id="suggestions-arrow"></span>
-        </div>
+        </button>
         <div class="suggestions-body" id="suggestions-body"></div>
       </div>
 
@@ -755,7 +838,7 @@ body.sheet-open { overflow: hidden; }
 
   <!-- Bottom Sheet -->
   <div class="sheet-backdrop" id="sheet-backdrop"></div>
-  <div class="bottom-sheet" id="bottom-sheet">
+  <div class="bottom-sheet" id="bottom-sheet" role="dialog" aria-modal="true" aria-label="Edit item">
     <div class="sheet-handle"></div>
     <div class="sheet-content">
       <input class="sheet-name" id="sheet-name" type="text" placeholder="Item name">
@@ -769,9 +852,12 @@ body.sheet-open { overflow: hidden; }
         </div>
       </div>
 
-      <div style="padding: 8px 0;">
-        <div class="day-picker-label sheet-field-label">Days</div>
-        <div class="day-picker" id="sheet-day-picker"></div>
+      <div class="sheet-field">
+        <span class="sheet-field-label">Assign to</span>
+        <button class="assign-to-btn" id="sheet-assign-to">
+          <span id="assign-to-label">General</span>
+          <span class="assign-chevron">&#8250;</span>
+        </button>
       </div>
 
       <div class="sheet-field">
@@ -781,6 +867,15 @@ body.sheet-open { overflow: hidden; }
 
       <button class="sheet-booking" id="sheet-booking" style="display:none;">View booking &#8594;</button>
       <button class="sheet-delete" id="sheet-delete">Delete item</button>
+    </div>
+
+    <!-- Assign-to picker (replaces sheet content when open) -->
+    <div class="assign-picker" id="assign-picker" style="display:none;">
+      <div class="assign-picker-header">
+        <button class="back-btn" id="assign-back">&#8592;</button>
+        <span class="assign-picker-title">Assign to</span>
+      </div>
+      <div id="assign-picker-body"></div>
     </div>
   </div>
 </div>
@@ -861,29 +956,29 @@ const trips = [
 ];
 
 let items = [
-  { id: 1,  tripId: 'tokyo-summer', name: 'Shorts',           category: 'Clothing',       quantity: 2, checked: false, days: [3],       activityRef: null,       bookingLink: null },
-  { id: 2,  tripId: 'tokyo-summer', name: 'Light jacket',     category: 'Clothing',       quantity: 1, checked: false, days: [],        activityRef: null,       bookingLink: null },
-  { id: 3,  tripId: 'tokyo-summer', name: 'T-shirts',         category: 'Clothing',       quantity: 3, checked: true,  days: [],        activityRef: null,       bookingLink: null },
-  { id: 4,  tripId: 'tokyo-summer', name: 'Underwear',        category: 'Clothing',       quantity: 5, checked: true,  days: [],        activityRef: null,       bookingLink: null },
-  { id: 5,  tripId: 'tokyo-summer', name: 'Swimsuit',         category: 'Clothing',       quantity: 1, checked: true,  days: [3],       activityRef: 'd3-beach', bookingLink: null },
-  { id: 6,  tripId: 'tokyo-summer', name: 'Passport',         category: 'Documents',      quantity: 1, checked: true,  days: [1],       activityRef: 'd1-flight', bookingLink: null },
-  { id: 7,  tripId: 'tokyo-summer', name: 'Boarding pass',    category: 'Documents',      quantity: 1, checked: true,  days: [1, 5],    activityRef: 'd1-flight', bookingLink: 'https://example.com/booking' },
-  { id: 8,  tripId: 'tokyo-summer', name: 'Sunscreen',        category: 'Toiletries',     quantity: 1, checked: false, days: [3],       activityRef: 'd3-beach', bookingLink: null },
-  { id: 9,  tripId: 'tokyo-summer', name: 'Toothbrush',       category: 'Toiletries',     quantity: 1, checked: false, days: [],        activityRef: null,       bookingLink: null },
-  { id: 10, tripId: 'tokyo-summer', name: 'Shampoo',          category: 'Toiletries',     quantity: 1, checked: false, days: [],        activityRef: null,       bookingLink: null },
-  { id: 11, tripId: 'tokyo-summer', name: 'Phone charger',    category: 'Electronics',    quantity: 1, checked: true,  days: [],        activityRef: null,       bookingLink: null },
-  { id: 12, tripId: 'tokyo-summer', name: 'Power bank',       category: 'Electronics',    quantity: 1, checked: false, days: [2, 3, 4], activityRef: null,       bookingLink: null },
-  { id: 13, tripId: 'tokyo-summer', name: 'Camera',           category: 'Electronics',    quantity: 1, checked: false, days: [2],       activityRef: 'd2-sensoji', bookingLink: null },
-  { id: 14, tripId: 'tokyo-summer', name: 'Antihistamine',    category: 'Health',         quantity: 1, checked: true,  days: [],        activityRef: null,       bookingLink: null },
-  { id: 15, tripId: 'tokyo-summer', name: 'First-aid kit',    category: 'Health',         quantity: 1, checked: false, days: [],        activityRef: null,       bookingLink: null },
-  { id: 16, tripId: 'tokyo-summer', name: 'Sandals',          category: 'Footwear',       quantity: 1, checked: true,  days: [3],       activityRef: null,       bookingLink: null },
-  { id: 17, tripId: 'tokyo-summer', name: 'Sneakers',         category: 'Footwear',       quantity: 1, checked: true,  days: [2, 4],    activityRef: null,       bookingLink: null },
-  { id: 18, tripId: 'tokyo-summer', name: 'Sunglasses',       category: 'Accessories',    quantity: 1, checked: true,  days: [],        activityRef: null,       bookingLink: null },
-  { id: 19, tripId: 'tokyo-summer', name: 'Hat',              category: 'Accessories',    quantity: 1, checked: false, days: [3],       activityRef: 'd3-beach', bookingLink: null },
-  { id: 20, tripId: 'tokyo-summer', name: 'Backpack',         category: 'Gear',           quantity: 1, checked: true,  days: [2],       activityRef: null,       bookingLink: null },
-  { id: 21, tripId: 'tokyo-summer', name: 'Water bottle',     category: 'Food & Snacks',  quantity: 1, checked: false, days: [2],       activityRef: 'd2-sensoji', bookingLink: null },
-  { id: 22, tripId: 'tokyo-summer', name: 'Trail mix',        category: 'Food & Snacks',  quantity: 1, checked: false, days: [2],       activityRef: null,       bookingLink: null },
-  { id: 23, tripId: 'tokyo-summer', name: 'Travel adapter',   category: 'Electronics',    quantity: 1, checked: false, days: [1],       activityRef: null,       bookingLink: null },
+  { id: 1,  tripId: 'tokyo-summer', name: 'Shorts',           category: 'Clothing',       quantity: 2, checked: false, assignedDay: 3,    assignedActivity: null,        bookingLink: null },
+  { id: 2,  tripId: 'tokyo-summer', name: 'Light jacket',     category: 'Clothing',       quantity: 1, checked: false, assignedDay: null,  assignedActivity: null,        bookingLink: null },
+  { id: 3,  tripId: 'tokyo-summer', name: 'T-shirts',         category: 'Clothing',       quantity: 3, checked: true,  assignedDay: null,  assignedActivity: null,        bookingLink: null },
+  { id: 4,  tripId: 'tokyo-summer', name: 'Underwear',        category: 'Clothing',       quantity: 5, checked: true,  assignedDay: null,  assignedActivity: null,        bookingLink: null },
+  { id: 5,  tripId: 'tokyo-summer', name: 'Swimsuit',         category: 'Clothing',       quantity: 1, checked: true,  assignedDay: 3,    assignedActivity: 'd3-beach',  bookingLink: null },
+  { id: 6,  tripId: 'tokyo-summer', name: 'Passport',         category: 'Documents',      quantity: 1, checked: true,  assignedDay: 1,    assignedActivity: 'd1-flight', bookingLink: null },
+  { id: 7,  tripId: 'tokyo-summer', name: 'Boarding pass',    category: 'Documents',      quantity: 1, checked: true,  assignedDay: 1,    assignedActivity: 'd1-flight', bookingLink: 'https://example.com/booking' },
+  { id: 8,  tripId: 'tokyo-summer', name: 'Sunscreen',        category: 'Toiletries',     quantity: 1, checked: false, assignedDay: 3,    assignedActivity: 'd3-beach',  bookingLink: null },
+  { id: 9,  tripId: 'tokyo-summer', name: 'Toothbrush',       category: 'Toiletries',     quantity: 1, checked: false, assignedDay: null,  assignedActivity: null,        bookingLink: null },
+  { id: 10, tripId: 'tokyo-summer', name: 'Shampoo',          category: 'Toiletries',     quantity: 1, checked: false, assignedDay: null,  assignedActivity: null,        bookingLink: null },
+  { id: 11, tripId: 'tokyo-summer', name: 'Phone charger',    category: 'Electronics',    quantity: 1, checked: true,  assignedDay: null,  assignedActivity: null,        bookingLink: null },
+  { id: 12, tripId: 'tokyo-summer', name: 'Power bank',       category: 'Electronics',    quantity: 1, checked: false, assignedDay: 2,    assignedActivity: null,        bookingLink: null },
+  { id: 13, tripId: 'tokyo-summer', name: 'Camera',           category: 'Electronics',    quantity: 1, checked: false, assignedDay: 2,    assignedActivity: 'd2-sensoji', bookingLink: null },
+  { id: 14, tripId: 'tokyo-summer', name: 'Antihistamine',    category: 'Health',         quantity: 1, checked: true,  assignedDay: null,  assignedActivity: null,        bookingLink: null },
+  { id: 15, tripId: 'tokyo-summer', name: 'First-aid kit',    category: 'Health',         quantity: 1, checked: false, assignedDay: null,  assignedActivity: null,        bookingLink: null },
+  { id: 16, tripId: 'tokyo-summer', name: 'Sandals',          category: 'Footwear',       quantity: 1, checked: true,  assignedDay: 3,    assignedActivity: null,        bookingLink: null },
+  { id: 17, tripId: 'tokyo-summer', name: 'Sneakers',         category: 'Footwear',       quantity: 1, checked: true,  assignedDay: 2,    assignedActivity: null,        bookingLink: null },
+  { id: 18, tripId: 'tokyo-summer', name: 'Sunglasses',       category: 'Accessories',    quantity: 1, checked: true,  assignedDay: null,  assignedActivity: null,        bookingLink: null },
+  { id: 19, tripId: 'tokyo-summer', name: 'Hat',              category: 'Accessories',    quantity: 1, checked: false, assignedDay: 3,    assignedActivity: 'd3-beach',  bookingLink: null },
+  { id: 20, tripId: 'tokyo-summer', name: 'Backpack',         category: 'Gear',           quantity: 1, checked: true,  assignedDay: 2,    assignedActivity: null,        bookingLink: null },
+  { id: 21, tripId: 'tokyo-summer', name: 'Water bottle',     category: 'Food & Snacks',  quantity: 1, checked: false, assignedDay: 2,    assignedActivity: 'd2-sensoji', bookingLink: null },
+  { id: 22, tripId: 'tokyo-summer', name: 'Trail mix',        category: 'Food & Snacks',  quantity: 1, checked: false, assignedDay: 2,    assignedActivity: null,        bookingLink: null },
+  { id: 23, tripId: 'tokyo-summer', name: 'Travel adapter',   category: 'Electronics',    quantity: 1, checked: false, assignedDay: 1,    assignedActivity: null,        bookingLink: null },
 ];
 
 let suggestions = [
@@ -963,6 +1058,10 @@ function updateProgress() {
 
   document.getElementById('progress-text').textContent = checked + ' of ' + total;
   document.getElementById('progress-fill').style.width = total > 0 ? ((checked / total) * 100) + '%' : '0%';
+
+  const bar = document.getElementById('progress-bar');
+  bar.setAttribute('aria-valuenow', String(checked));
+  bar.setAttribute('aria-valuemax', String(total));
 }
 
 // ─── View Toggle ───
@@ -985,6 +1084,8 @@ function switchView(view) {
     dayBtn.classList.add('active');
     catBtn.classList.remove('active');
   }
+  catBtn.setAttribute('aria-selected', view === 'category' ? 'true' : 'false');
+  dayBtn.setAttribute('aria-selected', view === 'day' ? 'true' : 'false');
 }
 
 // ─── AI Suggestions ───
@@ -1002,8 +1103,18 @@ function renderSuggestions() {
 
   banner.classList.remove('hidden');
   banner.classList.toggle('expanded', suggestionsExpanded);
-  label.textContent = '\u2728 ' + suggestions.length + ' suggestion' + (suggestions.length !== 1 ? 's' : '');
-  arrow.textContent = suggestionsExpanded ? '\u25B4' : '\u25BE';
+
+  // Sparkle with accessible label
+  clearChildren(label);
+  const sparkle = createEl('span', { 'aria-label': 'AI suggested', textContent: '\u2728 ' });
+  label.appendChild(sparkle);
+  label.appendChild(document.createTextNode(suggestions.length + ' suggestion' + (suggestions.length !== 1 ? 's' : '')));
+
+  // Arrow: ▸ collapsed, ▾ expanded
+  arrow.textContent = suggestionsExpanded ? '\u25BE' : '\u25B8';
+
+  // ARIA expanded state
+  document.getElementById('suggestions-header').setAttribute('aria-expanded', String(suggestionsExpanded));
 
   clearChildren(body);
   suggestions.forEach(s => {
@@ -1043,8 +1154,8 @@ function acceptSuggestion(sId) {
       category: s.category,
       quantity: 1,
       checked: false,
-      days: [],
-      activityRef: null,
+      assignedDay: null,
+      assignedActivity: null,
       bookingLink: null
     });
     suggestions = suggestions.filter(x => x.id !== sId);
@@ -1070,9 +1181,12 @@ function dismissSuggestion(sId) {
 function buildItemRow(item) {
   const row = createEl('div', { className: 'item-row' + (item.checked ? ' checked' : ''), id: 'item-' + item.id });
 
-  const cb = createEl('div', { className: 'checkbox' + (item.checked ? ' checked' : '') });
-  cb.addEventListener('click', (e) => { e.stopPropagation(); toggleCheck(item.id); });
-  row.appendChild(cb);
+  const cbInput = createEl('input', { type: 'checkbox', className: 'checkbox-input', id: 'cb-' + item.id });
+  cbInput.checked = item.checked;
+  cbInput.addEventListener('change', (e) => { e.stopPropagation(); toggleCheck(item.id); });
+  row.appendChild(cbInput);
+  const cbLabel = createEl('label', { className: 'checkbox' + (item.checked ? ' checked' : ''), 'for': 'cb-' + item.id });
+  row.appendChild(cbLabel);
 
   const qtyStr = item.quantity > 1 ? ' (' + item.quantity + ')' : '';
   const label = createEl('span', { className: 'item-label', textContent: item.name + qtyStr });
@@ -1084,30 +1198,6 @@ function buildItemRow(item) {
     chip.addEventListener('click', (e) => { e.stopPropagation(); handleBookingChip(); });
     row.appendChild(chip);
   }
-
-  const deleteZone = createEl('div', { className: 'delete-zone', id: 'delete-zone-' + item.id, textContent: 'Delete' });
-  row.appendChild(deleteZone);
-
-  // Swipe handlers
-  let startX = 0;
-  let currentX = 0;
-  row.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; currentX = startX; });
-  row.addEventListener('touchmove', (e) => {
-    currentX = e.touches[0].clientX;
-    const diff = startX - currentX;
-    if (diff > 10) {
-      deleteZone.style.width = Math.min(diff, 100) + 'px';
-      e.preventDefault();
-    }
-  }, { passive: false });
-  row.addEventListener('touchend', () => {
-    const diff = startX - currentX;
-    if (diff > 70) {
-      deleteItem(item.id);
-    } else {
-      deleteZone.style.width = '0';
-    }
-  });
 
   return row;
 }
@@ -1127,24 +1217,18 @@ function renderCategoryView() {
     const sorted = [...unchecked, ...checked];
     const checkedCount = checked.length;
     const total = catItems.length;
-    const key = 'cat-' + cat;
-    const isCollapsed = collapsedSections[key] === true;
-
     const section = createEl('div', { className: 'section' });
 
-    // Header
+    // Header (no collapse toggle — categories are always expanded in MVP)
     const header = createEl('div', { className: 'section-header' });
-    header.addEventListener('click', () => toggleSection(key));
     const headerLeft = createEl('div', { className: 'section-header-left' });
-    headerLeft.appendChild(createEl('span', { className: 'section-toggle' + (isCollapsed ? ' collapsed' : ''), textContent: '\u25BE' }));
     headerLeft.appendChild(createEl('span', { className: 'section-name', textContent: cat }));
     header.appendChild(headerLeft);
     header.appendChild(createEl('span', { className: 'section-count', textContent: checkedCount + '/' + total }));
     section.appendChild(header);
 
-    // Items
-    const itemsContainer = createEl('div', { className: 'section-items' + (isCollapsed ? ' collapsed' : '') });
-    itemsContainer.style.maxHeight = isCollapsed ? '0' : ((sorted.length + 2) * 56) + 'px';
+    // Items (always visible)
+    const itemsContainer = createEl('div', { className: 'section-items' });
 
     if (sorted.length === 0) {
       const emptyMsg = createEl('div', { textContent: 'No items yet' });
@@ -1176,8 +1260,8 @@ function renderCategoryView() {
           category: cat,
           quantity: 1,
           checked: false,
-          days: [],
-          activityRef: null,
+          assignedDay: null,
+          assignedActivity: null,
           bookingLink: null
         });
         addInput.value = '';
@@ -1248,7 +1332,7 @@ function renderDayView() {
   const tripItems = items.filter(i => i.tripId === currentTripId);
 
   for (let d = 1; d <= trip.days; d++) {
-    const dayItems = tripItems.filter(i => i.days.includes(d));
+    const dayItems = tripItems.filter(i => i.assignedDay === d);
     const checkedCount = dayItems.filter(i => i.checked).length;
     const total = dayItems.length;
     const key = 'day-' + d;
@@ -1258,8 +1342,9 @@ function renderDayView() {
 
     const section = createEl('div', { className: 'section' });
 
-    // Header
-    const header = createEl('div', { className: 'section-header' });
+    // Header (collapsible in Day view)
+    const header = createEl('div', { className: 'section-header collapsible' });
+    header.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
     header.addEventListener('click', () => toggleSection(key));
     const headerLeft = createEl('div', { className: 'section-header-left' });
     headerLeft.appendChild(createEl('span', { className: 'section-toggle' + (isCollapsed ? ' collapsed' : ''), textContent: '\u25BE' }));
@@ -1273,18 +1358,18 @@ function renderDayView() {
     itemsContainer.style.maxHeight = isCollapsed ? '0' : ((total + activities.length + 1) * 56) + 'px';
 
     if (total === 0) {
-      const emptyMsg = createEl('div', { textContent: 'No items for this day' });
-      emptyMsg.style.cssText = 'padding: 6px 0 6px 34px; font-size: 14px; color: var(--text-muted);';
+      const emptyMsg = createEl('div', { textContent: 'Add items in Category view' });
+      emptyMsg.style.cssText = 'padding: 6px 0; font-size: var(--caption-size); color: var(--text-muted);';
       itemsContainer.appendChild(emptyMsg);
     } else {
-      // Items not assigned to any activity
-      const unassigned = dayItems.filter(i => !i.activityRef || !activities.some(a => a.id === i.activityRef));
+      // Items not assigned to any activity (day-general items)
+      const unassigned = dayItems.filter(i => !i.assignedActivity || !activities.some(a => a.id === i.assignedActivity));
       const unassignedSorted = [...unassigned.filter(i => !i.checked), ...unassigned.filter(i => i.checked)];
       unassignedSorted.forEach(item => itemsContainer.appendChild(buildItemRow(item)));
 
       // Activity groups
       activities.forEach(act => {
-        const actItems = dayItems.filter(i => i.activityRef === act.id);
+        const actItems = dayItems.filter(i => i.assignedActivity === act.id);
         if (actItems.length === 0) return;
         itemsContainer.appendChild(createEl('div', { className: 'activity-header', textContent: act.name }));
         const actSorted = [...actItems.filter(i => !i.checked), ...actItems.filter(i => i.checked)];
@@ -1297,14 +1382,15 @@ function renderDayView() {
   }
 
   // General section
-  const generalItems = tripItems.filter(i => i.days.length === 0);
+  const generalItems = tripItems.filter(i => i.assignedDay === null);
   const generalChecked = generalItems.filter(i => i.checked);
   const generalSorted = [...generalItems.filter(i => !i.checked), ...generalChecked];
   const generalKey = 'day-general';
   const isGeneralCollapsed = collapsedSections[generalKey] === true;
 
   const generalSection = createEl('div', { className: 'section' });
-  const generalHeader = createEl('div', { className: 'section-header' });
+  const generalHeader = createEl('div', { className: 'section-header collapsible' });
+  generalHeader.setAttribute('aria-expanded', isGeneralCollapsed ? 'false' : 'true');
   generalHeader.addEventListener('click', () => toggleSection(generalKey));
   const generalHeaderLeft = createEl('div', { className: 'section-header-left' });
   generalHeaderLeft.appendChild(createEl('span', { className: 'section-toggle' + (isGeneralCollapsed ? ' collapsed' : ''), textContent: '\u25BE' }));
@@ -1366,17 +1452,13 @@ function openSheet(itemId) {
   document.getElementById('sheet-name').value = item.name;
   document.getElementById('sheet-quantity').textContent = String(item.quantity);
 
-  // Day picker
-  const picker = document.getElementById('sheet-day-picker');
-  clearChildren(picker);
-  for (let d = 1; d <= trip.days; d++) {
-    const chip = createEl('div', { className: 'day-chip' + (item.days.includes(d) ? ' selected' : ''), textContent: 'D' + d });
-    chip.addEventListener('click', () => toggleDay(d));
-    picker.appendChild(chip);
-  }
-  const generalChip = createEl('div', { className: 'day-chip day-chip-general' + (item.days.length === 0 ? ' selected' : ''), textContent: 'General' });
-  generalChip.addEventListener('click', () => toggleDayGeneral());
-  picker.appendChild(generalChip);
+  // Assign-to label
+  document.getElementById('assign-to-label').textContent = getAssignLabel(item, trip);
+
+  // Ensure picker is hidden and sheet content is shown
+  document.getElementById('assign-picker').style.display = 'none';
+  document.querySelector('.sheet-content').style.display = 'block';
+  document.querySelector('.sheet-handle').style.display = 'block';
 
   // Category dropdown
   const select = document.getElementById('sheet-category');
@@ -1408,6 +1490,10 @@ function closeSheet() {
   document.getElementById('sheet-backdrop').classList.remove('visible');
   document.getElementById('bottom-sheet').classList.remove('open');
   document.body.classList.remove('sheet-open');
+  // Reset picker state
+  document.getElementById('assign-picker').style.display = 'none';
+  document.querySelector('.sheet-content').style.display = 'block';
+  document.querySelector('.sheet-handle').style.display = 'block';
   currentItemId = null;
 }
 
@@ -1428,23 +1514,80 @@ function adjustQuantity(delta) {
   renderDayView();
 }
 
-function toggleDay(day) {
-  const item = items.find(i => i.id === currentItemId);
-  if (!item) return;
-  const idx = item.days.indexOf(day);
-  if (idx >= 0) {
-    item.days.splice(idx, 1);
-  } else {
-    item.days.push(day);
+function getAssignLabel(item, trip) {
+  if (!item.assignedDay) return 'General';
+  if (item.assignedActivity) {
+    const activities = trip.activities[item.assignedDay] || [];
+    const act = activities.find(a => a.id === item.assignedActivity);
+    if (act) return act.name;
   }
-  openSheet(currentItemId);
-  renderDayView();
+  return 'Day ' + item.assignedDay;
 }
 
-function toggleDayGeneral() {
+function openAssignPicker() {
   const item = items.find(i => i.id === currentItemId);
   if (!item) return;
-  item.days = [];
+  const trip = trips.find(t => t.id === currentTripId);
+  if (!trip) return;
+
+  // Hide sheet content, show picker
+  document.querySelector('.sheet-content').style.display = 'none';
+  document.querySelector('.sheet-handle').style.display = 'none';
+  const picker = document.getElementById('assign-picker');
+  picker.style.display = 'block';
+
+  const body = document.getElementById('assign-picker-body');
+  clearChildren(body);
+
+  for (let d = 1; d <= trip.days; d++) {
+    const theme = trip.dayThemes[d] ? ' \u00B7 ' + trip.dayThemes[d] : '';
+
+    // Section label
+    body.appendChild(createEl('div', { className: 'assign-section-label', textContent: 'DAY ' + d + theme }));
+
+    // Day-general option
+    const isDaySelected = item.assignedDay === d && !item.assignedActivity;
+    const dayOpt = createEl('div', { className: 'assign-option' + (isDaySelected ? ' selected' : '') });
+    dayOpt.appendChild(createEl('div', { className: 'assign-radio' }));
+    dayOpt.appendChild(createEl('span', { textContent: 'Day ' + d + ' (general)' }));
+    dayOpt.addEventListener('click', () => selectAssignment(d, null));
+    body.appendChild(dayOpt);
+
+    // Activity options
+    const activities = trip.activities[d] || [];
+    activities.forEach(act => {
+      const isActSelected = item.assignedActivity === act.id;
+      const actOpt = createEl('div', { className: 'assign-option activity' + (isActSelected ? ' selected' : '') });
+      actOpt.appendChild(createEl('div', { className: 'assign-radio' }));
+      actOpt.appendChild(createEl('span', { textContent: act.name }));
+      actOpt.addEventListener('click', () => selectAssignment(d, act.id));
+      body.appendChild(actOpt);
+    });
+  }
+
+  // Clear assignment option
+  const clearDiv = createEl('div', { className: 'assign-clear' });
+  const isUnassigned = item.assignedDay === null;
+  const clearOpt = createEl('div', { className: 'assign-option' + (isUnassigned ? ' selected' : '') });
+  clearOpt.appendChild(createEl('div', { className: 'assign-radio' }));
+  clearOpt.appendChild(createEl('span', { textContent: 'Clear assignment' }));
+  clearOpt.addEventListener('click', () => selectAssignment(null, null));
+  clearDiv.appendChild(clearOpt);
+  body.appendChild(clearDiv);
+}
+
+function closeAssignPicker() {
+  document.getElementById('assign-picker').style.display = 'none';
+  document.querySelector('.sheet-content').style.display = 'block';
+  document.querySelector('.sheet-handle').style.display = 'block';
+}
+
+function selectAssignment(day, activityId) {
+  const item = items.find(i => i.id === currentItemId);
+  if (!item) return;
+  item.assignedDay = day;
+  item.assignedActivity = activityId;
+  closeAssignPicker();
   openSheet(currentItemId);
   renderDayView();
 }
@@ -1473,6 +1616,8 @@ document.getElementById('qty-minus').addEventListener('click', () => adjustQuant
 document.getElementById('qty-plus').addEventListener('click', () => adjustQuantity(1));
 document.getElementById('sheet-delete').addEventListener('click', deleteCurrentItem);
 document.getElementById('sheet-booking').addEventListener('click', () => handleBookingChip());
+document.getElementById('sheet-assign-to').addEventListener('click', openAssignPicker);
+document.getElementById('assign-back').addEventListener('click', closeAssignPicker);
 
 document.getElementById('sheet-name').addEventListener('input', function() {
   const item = items.find(i => i.id === currentItemId);
