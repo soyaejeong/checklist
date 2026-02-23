@@ -75,10 +75,10 @@
 <!-- parallel: depends_on=[Types + Constants] | files: src/repositories/checklist-repository.ts, src/repositories/trip-repository.ts, src/services/auth-service.ts, src/services/suggestion-service.ts, src/lib/supabase/client.ts, src/lib/http/fastapi-client.ts, tests/repositories/checklist-repository.test.ts, tests/repositories/trip-repository.test.ts, tests/services/auth-service.test.ts, tests/services/suggestion-service.test.ts, tests/lib/supabase/client.test.ts, tests/lib/http/fastapi-client.test.ts -->
 
 #### Behavioral Tests
-- [ ] Test: ChecklistRepository interface declares getItems, addItem, updateItem, deleteItem, toggleCheck, getDismissed, dismissSuggestion, getCustomCategories, addCustomCategory, deleteCategory with correct signatures
-- [ ] Test: TripRepository interface declares getTripById and listTrips; AuthService declares getCurrentUser, signInAnonymously, upgradeToEmail, signOut, onAuthStateChange; SuggestionService declares getSuggestions, getCachedSuggestions, invalidateCache
-- [ ] Test: Supabase client module exports singleton `createClient` with realtime disabled and correct environment variable usage
-- [ ] Test: FastAPI HTTP client exports configured fetch wrapper that builds URLs from API base constant and handles JSON request/response
+- [x] Test: ChecklistRepository interface declares getItems, addItem, updateItem, deleteItem, toggleCheck, getDismissed, dismissSuggestion, getCustomCategories, addCustomCategory, deleteCategory with correct signatures
+- [x] Test: TripRepository interface declares getTripById and listTrips; AuthService declares getCurrentUser, signInAnonymously, upgradeToEmail, signOut, onAuthStateChange; SuggestionService declares getSuggestions, getCachedSuggestions, invalidateCache
+- [x] Test: Supabase client module exports singleton `createClient` with realtime disabled and correct environment variable usage
+- [x] Test: FastAPI HTTP client exports configured fetch wrapper that builds URLs from API base constant and handles JSON request/response
 
 ---
 
