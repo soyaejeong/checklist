@@ -73,8 +73,8 @@
 #### Behavioral Tests
 - [x] Test: `SupabaseAuthService.getCurrentUser()` returns `{ id, isAnonymous }` when session exists, returns null when no session; `signInAnonymously()` calls Supabase auth method successfully
 - [x] Test: `signInAnonymously()` retries up to 3 times with exponential backoff on failure (use fake timers), throws after all retries exhausted; `signOut()` calls Supabase signOut; `upgradeToEmail()` calls updateUser; `onAuthStateChange()` subscribes and returns unsubscribe function
-- [ ] Test: `AuthProvider` initializes by checking for existing session, auto-signs in anonymously if no session, exposes `{ user, loading, error }` through context; children re-render when auth state changes; error state surfaced when auth fails
-- [ ] Test: `useAuth()` returns `{ user, loading, error, signOut }` from AuthContext; throws meaningful error when used outside AuthProvider
+- [x] Test: `AuthProvider` initializes by checking for existing session, auto-signs in anonymously if no session, exposes `{ user, loading, error }` through context; children re-render when auth state changes; error state surfaced when auth fails
+- [x] Test: `useAuth()` returns `{ user, loading, error, signOut }` from AuthContext; throws meaningful error when used outside AuthProvider
 
 ---
 
