@@ -1,5 +1,23 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+
+vi.mock('@/lib/supabase/client', () => ({
+  createClient: () => ({
+    from: () => {
+      const chain: Record<string, unknown> = { data: [], error: null };
+      const methods = ['select', 'eq', 'order', 'insert', 'update', 'delete', 'single', 'filter', 'match', 'in', 'is', 'limit'];
+      for (const m of methods) chain[m] = () => chain;
+      return chain;
+    },
+    auth: {
+      getUser: async () => ({ data: { user: null }, error: null }),
+      signInAnonymously: async () => ({ data: { user: null, session: null }, error: null }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+      getSession: async () => ({ data: { session: null }, error: null }),
+    },
+  }),
+}));
+
 import { AppProviders } from '@/app/providers';
 
 describe('AppProviders', () => {
@@ -13,8 +31,6 @@ describe('AppProviders', () => {
   });
 
   it('nests AuthProvider > RepositoryProvider > SuggestionProvider', () => {
-    // Verifies the composition doesn't throw — the correct nesting
-    // is enforced by the providers requiring auth context to exist
     const { container } = render(
       <AppProviders>
         <span>Nested content</span>
