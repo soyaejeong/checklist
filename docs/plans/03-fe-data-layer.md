@@ -71,8 +71,8 @@
 <!-- parallel: independent | files: src/services/implementations/supabase-auth-service.ts, src/providers/auth-provider.tsx, src/hooks/use-auth.ts, tests/services/implementations/supabase-auth-service.test.ts, tests/providers/auth-provider.test.tsx, tests/hooks/use-auth.test.ts -->
 
 #### Behavioral Tests
-- [ ] Test: `SupabaseAuthService.getCurrentUser()` returns `{ id, isAnonymous }` when session exists, returns null when no session; `signInAnonymously()` calls Supabase auth method successfully
-- [ ] Test: `signInAnonymously()` retries up to 3 times with exponential backoff on failure (use fake timers), throws after all retries exhausted; `signOut()` calls Supabase signOut; `upgradeToEmail()` calls updateUser; `onAuthStateChange()` subscribes and returns unsubscribe function
+- [x] Test: `SupabaseAuthService.getCurrentUser()` returns `{ id, isAnonymous }` when session exists, returns null when no session; `signInAnonymously()` calls Supabase auth method successfully
+- [x] Test: `signInAnonymously()` retries up to 3 times with exponential backoff on failure (use fake timers), throws after all retries exhausted; `signOut()` calls Supabase signOut; `upgradeToEmail()` calls updateUser; `onAuthStateChange()` subscribes and returns unsubscribe function
 - [ ] Test: `AuthProvider` initializes by checking for existing session, auto-signs in anonymously if no session, exposes `{ user, loading, error }` through context; children re-render when auth state changes; error state surfaced when auth fails
 - [ ] Test: `useAuth()` returns `{ user, loading, error, signOut }` from AuthContext; throws meaningful error when used outside AuthProvider
 
@@ -82,11 +82,11 @@
 <!-- parallel: independent | files: src/repositories/implementations/supabase-checklist-repository.ts, src/providers/repository-provider.tsx, src/hooks/use-checklist.ts, src/hooks/use-checklist-state.ts, tests/repositories/implementations/supabase-checklist-repository.test.ts, tests/providers/repository-provider.test.tsx, tests/hooks/use-checklist.test.ts, tests/hooks/use-checklist-state.test.ts -->
 
 #### Behavioral Tests
-- [ ] Test: `SupabaseChecklistRepository.getItems(tripId)` queries checklist_items filtered by trip_id, returns typed ChecklistItem[]; `addItem(item)` inserts with auto-injected user_id from current session
-- [ ] Test: `updateItem(id, updates)` updates matching row and returns updated item; `deleteItem(id)` deletes row; `toggleCheck(id)` reads current checked state, flips it, and returns result
-- [ ] Test: `getDismissed(tripId)` returns DismissedSuggestion[]; `dismissSuggestion()` inserts with user_id; `getCustomCategories()` returns UserCategory[]; `addCustomCategory()` inserts; `deleteCategory()` batch-updates items to "Miscellaneous" then deletes category row (two calls)
-- [ ] Test: `RepositoryProvider` creates SupabaseChecklistRepository and HardcodedTripRepository, provides them via context; `useChecklist()` returns checklist repository methods; throws when used outside provider
-- [ ] Test: `useChecklistState(tripId)` loads items via repository and applies checked-to-bottom sort; `toggleCheck` performs optimistic update (immediate local state flip, rollback on repo failure); `addItem` appends optimistically
+- [x] Test: `SupabaseChecklistRepository.getItems(tripId)` queries checklist_items filtered by trip_id, returns typed ChecklistItem[]; `addItem(item)` inserts with auto-injected user_id from current session
+- [x] Test: `updateItem(id, updates)` updates matching row and returns updated item; `deleteItem(id)` deletes row; `toggleCheck(id)` reads current checked state, flips it, and returns result
+- [x] Test: `getDismissed(tripId)` returns DismissedSuggestion[]; `dismissSuggestion()` inserts with user_id; `getCustomCategories()` returns UserCategory[]; `addCustomCategory()` inserts; `deleteCategory()` batch-updates items to "Miscellaneous" then deletes category row (two calls)
+- [x] Test: `RepositoryProvider` creates SupabaseChecklistRepository and HardcodedTripRepository, provides them via context; `useChecklist()` returns checklist repository methods; throws when used outside provider
+- [x] Test: `useChecklistState(tripId)` loads items via repository and applies checked-to-bottom sort; `toggleCheck` performs optimistic update (immediate local state flip, rollback on repo failure); `addItem` appends optimistically
 
 ---
 
