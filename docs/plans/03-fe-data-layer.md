@@ -94,11 +94,11 @@
 <!-- parallel: independent | files: src/repositories/implementations/hardcoded-trip-repository.ts, src/services/implementations/fastapi-suggestion-service.ts, src/providers/suggestion-provider.tsx, src/hooks/use-trip.ts, src/hooks/use-suggestions.ts, src/hooks/use-suggestion-banner.ts, tests/repositories/implementations/hardcoded-trip-repository.test.ts, tests/services/implementations/fastapi-suggestion-service.test.ts, tests/providers/suggestion-provider.test.tsx, tests/hooks/use-trip.test.ts, tests/hooks/use-suggestions.test.ts, tests/hooks/use-suggestion-banner.test.ts -->
 
 #### Behavioral Tests
-- [ ] Test: `HardcodedTripRepository.getTripById(tripId)` returns matching trip from sample data or null for unknown IDs; `listTrips()` returns all sample trips with correct Trip structure
-- [ ] Test: `FastAPISuggestionService` stub — `getSuggestions()` returns empty array; `getCachedSuggestions()` returns null; `invalidateCache()` is a no-op (real wiring in Slice 7)
-- [ ] Test: `SuggestionProvider` creates FastAPISuggestionService, provides via context; `useSuggestions()` returns service methods; throws when used outside provider
-- [ ] Test: `useTrip(tripId)` loads trip data via repository context, exposes `{ trip, loading, error }`; returns null trip for unknown IDs; re-fetches when tripId changes
-- [ ] Test: `useSuggestionBanner(tripId)` manages localStorage flags — first visit: bannerSeen=false, bannerExpanded=true (auto-expand per UISPEC); after markSeen: bannerSeen=true, subsequent visits default collapsed; setExpanded toggles
+- [x] Test: `HardcodedTripRepository.getTripById(tripId)` returns matching trip from sample data or null for unknown IDs; `listTrips()` returns all sample trips with correct Trip structure
+- [x] Test: `FastAPISuggestionService` stub — `getSuggestions()` returns empty array; `getCachedSuggestions()` returns null; `invalidateCache()` is a no-op (real wiring in Slice 7)
+- [x] Test: `SuggestionProvider` creates FastAPISuggestionService, provides via context; `useSuggestions()` returns service methods; throws when used outside provider
+- [x] Test: `useTrip(tripId)` loads trip data via repository context, exposes `{ trip, loading, error }`; returns null trip for unknown IDs; re-fetches when tripId changes
+- [x] Test: `useSuggestionBanner(tripId)` manages localStorage flags — first visit: bannerSeen=false, bannerExpanded=true (auto-expand per UISPEC); after markSeen: bannerSeen=true, subsequent visits default collapsed; setExpanded toggles
 
 ---
 
