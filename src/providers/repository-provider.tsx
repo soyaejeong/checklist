@@ -1,8 +1,11 @@
 'use client';
 
-import { createContext, type ReactNode } from 'react';
+import { createContext, useMemo, type ReactNode } from 'react';
 import type { ChecklistRepository } from '@/repositories/checklist-repository';
 import type { TripRepository } from '@/repositories/trip-repository';
+import { SupabaseChecklistRepository } from '@/repositories/implementations/supabase-checklist-repository';
+import { HardcodedTripRepository } from '@/repositories/implementations/hardcoded-trip-repository';
+import { createClient } from '@/lib/supabase/client';
 
 export interface RepositoryContextValue {
   checklistRepo: ChecklistRepository;
@@ -16,10 +19,16 @@ interface RepositoryProviderProps {
 }
 
 export function RepositoryProvider({ children }: RepositoryProviderProps) {
-  // Skeleton: full implementation in Slice 03 Checklist Repository section
-  // Provides null context until real implementations are wired
+  const value = useMemo<RepositoryContextValue>(() => {
+    const client = createClient();
+    return {
+      checklistRepo: new SupabaseChecklistRepository(client),
+      tripRepo: new HardcodedTripRepository(),
+    };
+  }, []);
+
   return (
-    <RepositoryContext.Provider value={null}>
+    <RepositoryContext.Provider value={value}>
       {children}
     </RepositoryContext.Provider>
   );
