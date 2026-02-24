@@ -105,7 +105,7 @@
 ### Integration (#17)
 <!-- parallel: sequential | executor: lead | depends_on: ALL -->
 
-- [ ] Test: Full provider stack renders with all real implementations wired; useAuth + useChecklist + useTrip + useSuggestions hooks all return expected shapes when consumed within AppProviders; no circular dependencies between modules
+- [x] Test: Full provider stack renders with all real implementations wired; useAuth + useChecklist + useTrip + useSuggestions hooks all return expected shapes when consumed within AppProviders; no circular dependencies between modules
 
 ---
 
