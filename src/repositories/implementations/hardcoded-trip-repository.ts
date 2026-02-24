@@ -1,13 +1,13 @@
 import type { TripRepository } from '@/repositories/trip-repository';
 import type { Trip } from '@/types/trip';
+import { sampleTrips } from '@/data/trips';
 
-// Stub: full implementation by Trip Data section worker
 export class HardcodedTripRepository implements TripRepository {
-  async getTripById(_tripId: string): Promise<Trip | null> {
-    throw new Error('Not implemented');
+  async getTripById(tripId: string): Promise<Trip | null> {
+    return sampleTrips.find((t) => t.trip_id === tripId) ?? null;
   }
 
   async listTrips(): Promise<Trip[]> {
-    throw new Error('Not implemented');
+    return sampleTrips;
   }
 }

@@ -1,7 +1,8 @@
 'use client';
 
-import { createContext, type ReactNode } from 'react';
+import { createContext, useMemo, type ReactNode } from 'react';
 import type { SuggestionService } from '@/services/suggestion-service';
+import { FastAPISuggestionService } from '@/services/implementations/fastapi-suggestion-service';
 
 export interface SuggestionContextValue {
   suggestionService: SuggestionService;
@@ -14,9 +15,15 @@ interface SuggestionProviderProps {
 }
 
 export function SuggestionProvider({ children }: SuggestionProviderProps) {
-  // Skeleton: full implementation in Slice 03 Trip + Suggestion section
+  const suggestionService = useMemo(() => new FastAPISuggestionService(), []);
+
+  const value = useMemo<SuggestionContextValue>(
+    () => ({ suggestionService }),
+    [suggestionService]
+  );
+
   return (
-    <SuggestionContext.Provider value={null}>
+    <SuggestionContext.Provider value={value}>
       {children}
     </SuggestionContext.Provider>
   );
