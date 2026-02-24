@@ -1,6 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AuthService } from '@/services/auth-service';
 
+const MAX_RETRIES = 3;
+const BASE_DELAY_MS = 1000;
+
 export class SupabaseAuthService implements AuthService {
   constructor(private client: SupabaseClient) {}
 
@@ -15,21 +18,48 @@ export class SupabaseAuthService implements AuthService {
   }
 
   async signInAnonymously(): Promise<void> {
-    const { error } = await this.client.auth.signInAnonymously();
+    let lastError: unknown;
+
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      const { error } = await this.client.auth.signInAnonymously();
+      if (!error) return;
+
+      lastError = error;
+      if (attempt < MAX_RETRIES - 1) {
+        const delay = BASE_DELAY_MS * Math.pow(2, attempt);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+
+    throw lastError;
+  }
+
+  async upgradeToEmail(email: string, password: string): Promise<void> {
+    const { error } = await this.client.auth.updateUser({ email, password });
     if (error) throw error;
   }
 
-  async upgradeToEmail(_email: string, _password: string): Promise<void> {
-    throw new Error('Not implemented');
-  }
-
   async signOut(): Promise<void> {
-    throw new Error('Not implemented');
+    const { error } = await this.client.auth.signOut();
+    if (error) throw error;
   }
 
   onAuthStateChange(
-    _cb: (user: { id: string; isAnonymous: boolean } | null) => void,
+    cb: (user: { id: string; isAnonymous: boolean } | null) => void,
   ): () => void {
-    throw new Error('Not implemented');
+    const {
+      data: { subscription },
+    } = this.client.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        cb({
+          id: session.user.id,
+          isAnonymous: (session.user as { is_anonymous?: boolean }).is_anonymous ?? false,
+        });
+      } else {
+        cb(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }
 }
